@@ -123,6 +123,94 @@ function setupEventListeners() {
     if (loginBtn) {
         loginBtn.addEventListener('click', handleLogin);
     }
+    
+    // 탭 전환 이벤트 처리
+    setupTabEvents();
+}
+
+// 마크다운 <-> HTML 탭 전환 이벤트 설정
+function setupTabEvents() {
+    // HTML 탭과 마크다운 탭 요소
+    const htmlTab = document.getElementById('html-tab');
+    const markdownTab = document.getElementById('markdown-tab');
+    
+    if (!htmlTab || !markdownTab) return;
+    
+    // HTML -> 마크다운 변환 (탭 전환 시)
+    markdownTab.addEventListener('shown.bs.tab', function(e) {
+        const htmlContent = document.getElementById('billContent').value;
+        const markdownContent = document.getElementById('billMarkdownContent');
+        
+        // HTML 내용이 있고 마크다운 내용이 없을 때만 변환
+        if (htmlContent && !markdownContent.value) {
+            markdownContent.value = convertHtmlToMarkdown(htmlContent);
+        }
+    });
+    
+    // 마크다운 -> HTML 변환 (탭 전환 시)
+    htmlTab.addEventListener('shown.bs.tab', function(e) {
+        const markdownContent = document.getElementById('billMarkdownContent').value;
+        const htmlContent = document.getElementById('billContent');
+        
+        // 마크다운 내용이 있고 HTML 내용이 없을 때만 변환
+        if (markdownContent && !htmlContent.value) {
+            htmlContent.value = convertMarkdownToHtml(markdownContent);
+        }
+    });
+    
+    // 미리보기 버튼 이벤트
+    const previewMarkdownBtn = document.getElementById('previewMarkdownBtn');
+    if (previewMarkdownBtn) {
+        previewMarkdownBtn.addEventListener('click', function() {
+            showMarkdownPreview();
+        });
+    }
+}
+
+// HTML을 마크다운으로 변환하는 함수
+function convertHtmlToMarkdown(html) {
+    if (!html) return '';
+    
+    // 기본적인 HTML -> 마크다운 변환
+    let markdown = html
+        // 헤더 변환
+        .replace(/<h1>(.*?)<\/h1>/gi, '# $1\n\n')
+        .replace(/<h2>(.*?)<\/h2>/gi, '## $1\n\n')
+        .replace(/<h3>(.*?)<\/h3>/gi, '### $1\n\n')
+        
+        // 볼드 및 이탤릭
+        .replace(/<strong>(.*?)<\/strong>/gi, '**$1**')
+        .replace(/<em>(.*?)<\/em>/gi, '*$1*')
+        .replace(/<b>(.*?)<\/b>/gi, '**$1**')
+        .replace(/<i>(.*?)<\/i>/gi, '*$1*')
+        
+        // 링크
+        .replace(/<a href="(.*?)".*?>(.*?)<\/a>/gi, '[$2]($1)')
+        
+        // 이미지
+        .replace(/<img src="(.*?)".*?alt="(.*?)".*?>/gi, '![$2]($1)')
+        
+        // 목록
+        .replace(/<ul>(.*?)<\/ul>/gis, function(match, content) {
+            return content.replace(/<li>(.*?)<\/li>/gi, '* $1\n');
+        })
+        
+        // 코드
+        .replace(/<code>(.*?)<\/code>/gi, '`$1`')
+        
+        // 단락
+        .replace(/<p>(.*?)<\/p>/gi, '$1\n\n')
+        
+        // 줄바꿈
+        .replace(/<br\s*\/?>/gi, '\n');
+    
+    // 이스케이프된 HTML 요소 복원
+    markdown = markdown
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&');
+    
+    return markdown.trim();
 }
 
 // 법안 목록 로드
@@ -439,6 +527,15 @@ async function editBill(billId) {
         form.elements['billProposer'].value = bill.writer;
         form.elements['billContent'].value = bill.description;
         
+        // HTML이 있으면 마크다운으로도 변환해서 채우기
+        if (bill.description) {
+            const markdownContent = convertHtmlToMarkdown(bill.description);
+            const markdownField = form.elements['billMarkdownContent'];
+            if (markdownField) {
+                markdownField.value = markdownContent;
+            }
+        }
+        
         // 폼에 법안 ID 저장 (숨겨진 필드 사용)
         if (!form.elements['billId']) {
             const hiddenField = document.createElement('input');
@@ -513,10 +610,23 @@ async function handleFormSubmit(event) {
     
     const billId = form.elements['billId'] ? form.elements['billId'].value : null;
     
+    // 내용 가져오기 (HTML 또는 마크다운)
+    let content = '';
+    const activeTab = document.querySelector('.nav-link.active');
+    
+    if (activeTab && activeTab.id === 'markdown-tab') {
+        // 마크다운 내용을 HTML로 변환
+        const markdownContent = form.elements['billMarkdownContent'].value;
+        content = convertMarkdownToHtml(markdownContent);
+    } else {
+        // 기본 HTML 내용
+        content = form.elements['billContent'].value;
+    }
+    
     const billData = {
         bill_name: form.elements['billTitle'].value,
         writer: form.elements['billProposer'].value,
-        description: form.elements['billContent'].value
+        description: content
     };
     
     console.log('폼 제출 - 데이터:', billData);
@@ -595,6 +705,45 @@ async function handleFormSubmit(event) {
         }
         showAlert(errorMsg, 'danger');
     }
+}
+
+// 마크다운을 HTML로 변환하는 함수
+function convertMarkdownToHtml(markdown) {
+    if (!markdown) return '';
+    
+    // 기본적인 마크다운 변환 (더 복잡한 변환은 라이브러리 사용 권장)
+    let html = markdown
+        // 헤더 변환
+        .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+        .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+        .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+        
+        // 볼드 및 이탤릭
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        
+        // 링크
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+        
+        // 목록
+        .replace(/^\s*\n\* (.*)/gm, '<ul>\n<li>$1</li>')
+        .replace(/^\* (.*)/gm, '<li>$1</li>')
+        .replace(/^\s*\n- (.*)/gm, '<ul>\n<li>$1</li>')
+        .replace(/^- (.*)/gm, '<li>$1</li>')
+        
+        // 코드
+        .replace(/`(.*?)`/g, '<code>$1</code>')
+        
+        // 단락
+        .replace(/^\s*\n\s*\n/gm, '</p><p>')
+        
+        // 이미지
+        .replace(/!\[([^\]]+)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="img-fluid" />');
+    
+    // 단락으로 감싸기
+    html = '<p>' + html + '</p>';
+    
+    return html;
 }
 
 // 검색 처리
@@ -989,4 +1138,53 @@ async function checkUserRole(user) {
         // 오류 발생 시 관리자로 간주 (테스트용)
         return true;
     }
+}
+
+// 마크다운 미리보기 모달 표시
+function showMarkdownPreview() {
+    const markdownContent = document.getElementById('billMarkdownContent').value;
+    
+    if (!markdownContent) {
+        showAlert('미리보기할 마크다운 내용이 없습니다.', 'warning');
+        return;
+    }
+    
+    // HTML로 변환
+    const htmlContent = convertMarkdownToHtml(markdownContent);
+    
+    // 모달 HTML 생성
+    let previewModal = document.getElementById('markdownPreviewModal');
+    
+    if (!previewModal) {
+        const modalHTML = `
+        <div class="modal fade" id="markdownPreviewModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">마크다운 미리보기</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="markdownPreviewContent" class="p-3 border rounded bg-light"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+        
+        // 모달을 body에 추가
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        previewModal = document.getElementById('markdownPreviewModal');
+    }
+    
+    // 미리보기 내용 설정
+    const previewContent = document.getElementById('markdownPreviewContent');
+    previewContent.innerHTML = htmlContent;
+    
+    // 모달 표시
+    const modal = new bootstrap.Modal(previewModal);
+    modal.show();
 } 

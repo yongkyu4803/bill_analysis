@@ -51,10 +51,33 @@
                                 <label for="billProposer" class="form-label">제안자</label>
                                 <input type="text" class="form-control" id="billProposer" name="billProposer" required>
                             </div>
+                            
+                            <!-- 탭 메뉴 추가 -->
                             <div class="mb-3">
-                                <label for="billContent" class="form-label">법안 내용</label>
-                                <textarea class="form-control" id="billContent" name="billContent" rows="4" required></textarea>
+                                <label class="form-label">법안 내용</label>
+                                <ul class="nav nav-tabs" id="contentTab" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="html-tab" data-bs-toggle="tab" data-bs-target="#html-content" type="button" role="tab" aria-controls="html-content" aria-selected="true">HTML</button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="markdown-tab" data-bs-toggle="tab" data-bs-target="#markdown-content" type="button" role="tab" aria-controls="markdown-content" aria-selected="false">마크다운</button>
+                                    </li>
+                                </ul>
+                                <div class="tab-content pt-2" id="contentTabContent">
+                                    <div class="tab-pane fade show active" id="html-content" role="tabpanel" aria-labelledby="html-tab">
+                                        <textarea class="form-control" id="billContent" name="billContent" rows="6" required></textarea>
+                                        <small class="text-muted">HTML 형식으로 직접 입력합니다.</small>
+                                    </div>
+                                    <div class="tab-pane fade" id="markdown-content" role="tabpanel" aria-labelledby="markdown-tab">
+                                        <textarea class="form-control" id="billMarkdownContent" name="billMarkdownContent" rows="6"></textarea>
+                                        <div class="d-flex justify-content-between align-items-center mt-2">
+                                            <small class="text-muted">마크다운 구문으로 작성합니다. (# 제목, **굵게**, *기울임*, [링크](URL) 등)</small>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="previewMarkdownBtn">미리보기</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
+                            
                             <div class="text-end">
                                 <button type="button" class="btn btn-outline-secondary me-2" data-bs-toggle="collapse" data-bs-target="#formContainer">
                                     취소
