@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <title>법안 관리 시스템</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- 사용자 정의 CSS -->
+    <link rel="stylesheet" href="public/css/style.css">
+    <link rel="stylesheet" href="public/css/form.css">
+    <!-- 모바일 최적화 스타일 -->
+    <style>
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            input, select, textarea {
+                font-size: 16px !important; /* iOS에서 자동 확대 방지 */
+            }
+            .modal-dialog {
+                margin: 10px;
+                max-width: calc(100% - 20px);
+            }
+            .table-responsive {
+                overflow-x: auto;
+            }
+        }
+    </style>
+    <!-- Supabase 클라이언트 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.5"></script>
+</head>
+<body>
+    <div class="container-fluid">
+        <div id="alertContainer" class="position-fixed top-0 start-50 translate-middle-x" style="z-index: 1050; margin-top: 20px;"></div>
+        
+        <header class="bg-primary text-white p-3 mb-4">
+            <div class="container">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h1 class="h3 mb-0">법안 관리 시스템</h1>
+                    <div>
+                        <button id="addBillBtn" class="btn btn-light">
+                            <i class="bi bi-plus-circle"></i> 법안 등록
+                        </button>
+                        <!-- 법안 분석 보고서 버튼 (주석 처리) -->
+                        <!-- <button id="viewAnalysisBtn" class="btn btn-info ms-2">
+                            <i class="bi bi-file-earmark-text"></i> 법안 분석 보고서
+                        </button> -->
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <main class="container">
+            <div class="card mb-4">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h2 class="h5 mb-0">법안 목록</h2>
+                    <div class="input-group" style="max-width: 300px;">
+                        <input type="text" id="searchInput" class="form-control" placeholder="법안명 검색...">
+                        <button class="btn btn-outline-secondary" type="button">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="5%">#</th>
+                                    <th width="35%">법안명</th>
+                                    <th width="25%">제안자</th>
+                                    <th width="20%">등록일</th>
+                                    <th width="15%">관리</th>
+                                </tr>
+                            </thead>
+                            <tbody id="billList">
+                                <tr>
+                                    <td colspan="5" class="text-center">법안을 불러오는 중...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-light">
+                    <nav aria-label="페이지 네비게이션">
+                        <ul class="pagination justify-content-center mb-0">
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" tabindex="-1">이전</a>
+                            </li>
+                            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                            <li class="page-item"><a class="page-link" href="#">2</a></li>
+                            <li class="page-item"><a class="page-link" href="#">3</a></li>
+                            <li class="page-item">
+                                <a class="page-link" href="#">다음</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </main>
+        
+        <footer class="bg-light p-3 mt-4 border-top">
+            <div class="container text-center">
+                <p class="text-muted mb-0">&copy; 2024 법안 관리 시스템. All rights reserved.</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- 법안 등록/편집 모달 -->
+    <div class="modal fade" id="billModal" tabindex="-1" aria-labelledby="billModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="billModalLabel">법안 등록</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="billForm">
+                        <input type="hidden" id="billId">
+                        <div class="mb-3">
+                            <label for="billName" class="form-label">법안명</label>
+                            <input type="text" class="form-control" id="billName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="billProposer" class="form-label">제안자</label>
+                            <input type="text" class="form-control" id="billProposer" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="billDescription" class="form-label">상세 내용</label>
+                            <textarea class="form-control" id="billDescription" rows="10"></textarea>
+                            <div class="form-text">HTML 코드를 직접 입력하여 상세한 보고서를 작성할 수 있습니다.</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="saveBillBtn">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 법안 상세 모달 -->
+    <div class="modal fade" id="billDetailModal" tabindex="-1" aria-labelledby="billDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="billDetailTitle">법안 상세 정보</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="billDetailContent">
+                    <!-- 동적으로 내용이 채워집니다 -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                    <button type="button" class="btn btn-primary" id="editBillBtn">수정</button>
+                    <!-- 삭제 버튼 주석 처리 -->
+                    <!-- <button type="button" class="btn btn-danger" id="deleteBillBtn">삭제</button> -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 분석 보고서 모달 -->
+    <div class="modal fade" id="analysisReportModal" tabindex="-1" aria-labelledby="analysisReportModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="analysisReportModalLabel">법안 분석 보고서</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <iframe id="analysisReportFrame" style="width: 100%; height: 600px; border: none;"></iframe>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- 사용자 정의 JS -->
+    <script src="public/js/app.js"></script>
+</body>
+</html> 
