@@ -59,6 +59,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         return;
     }
     
+    // 세션 상태 확인
+    checkSession();
+    
     // 초기 데이터 로딩
     loadBills();
     
@@ -113,6 +116,12 @@ function setupEventListeners() {
     const analysisReportBtn = document.getElementById('viewAnalysisBtn');
     if (analysisReportBtn) {
         analysisReportBtn.addEventListener('click', showAnalysisReport);
+    }
+    
+    // 로그인 버튼
+    const loginBtn = document.getElementById('loginBtn');
+    if (loginBtn) {
+        loginBtn.addEventListener('click', handleLogin);
     }
 }
 
@@ -196,10 +205,10 @@ function renderBillList(bills) {
                     <button class="btn btn-sm btn-primary view-bill" data-id="${bill.id}" title="상세보기">
                         <i class="bi bi-eye"></i>
                     </button>
-                    <button class="btn btn-sm btn-warning edit-bill" data-id="${bill.id}" title="수정">
+                    <button class="btn btn-sm btn-warning edit-bill admin-only d-none" data-id="${bill.id}" title="수정">
                         <i class="bi bi-pencil"></i>
                     </button>
-                    <button class="btn btn-sm btn-danger delete-bill" data-id="${bill.id}" title="삭제">
+                    <button class="btn btn-sm btn-danger delete-bill admin-only d-none" data-id="${bill.id}" title="삭제">
                         <i class="bi bi-trash"></i>
                     </button>
                 </td>
@@ -667,5 +676,231 @@ async function loadModalTemplates() {
     } catch (error) {
         console.error('모달 템플릿 로드 오류:', error);
         showAlert('모달 템플릿을 로드하는 중 오류가 발생했습니다.', 'danger');
+    }
+}
+
+// 로그인 처리
+async function handleLogin() {
+    try {
+        // 로그인 모달 생성
+        let loginModal = document.getElementById('loginModal');
+        
+        if (!loginModal) {
+            // 모달 HTML 생성
+            const modalHTML = `
+            <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">관리자 로그인</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="loginForm">
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">이메일</label>
+                                    <input type="email" class="form-control" id="email" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="password" class="form-label">비밀번호</label>
+                                    <input type="password" class="form-control" id="password" required>
+                                </div>
+                                <div id="loginError" class="alert alert-danger d-none"></div>
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary">로그인</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+            
+            // 모달을 body에 추가
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            loginModal = document.getElementById('loginModal');
+            
+            // 로그인 폼 제출 이벤트 추가
+            const loginForm = document.getElementById('loginForm');
+            loginForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                
+                try {
+                    // 로그인 처리 중 표시
+                    const submitBtn = loginForm.querySelector('button[type="submit"]');
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>로그인 중...';
+                    submitBtn.disabled = true;
+                    
+                    const { data, error } = await supabaseClient.auth.signInWithPassword({
+                        email: email,
+                        password: password
+                    });
+                    
+                    if (error) throw error;
+                    
+                    console.log('로그인 성공:', data);
+                    
+                    // 로그인 성공 처리
+                    const modal = bootstrap.Modal.getInstance(loginModal);
+                    modal.hide();
+                    
+                    // 관리자 UI로 전환
+                    showAdminUI();
+                    
+                    showAlert('관리자로 로그인되었습니다.', 'success');
+                    
+                    // 세션 정보 확인 및 권한 검사
+                    checkUserRole(data.user);
+                } catch (error) {
+                    console.error('로그인 오류:', error);
+                    const loginError = document.getElementById('loginError');
+                    loginError.textContent = '로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.';
+                    loginError.classList.remove('d-none');
+                    
+                    // 버튼 상태 복원
+                    const submitBtn = loginForm.querySelector('button[type="submit"]');
+                    submitBtn.innerHTML = '로그인';
+                    submitBtn.disabled = false;
+                }
+            });
+        }
+        
+        // 모달 표시
+        const modal = new bootstrap.Modal(loginModal);
+        modal.show();
+    } catch (error) {
+        console.error('로그인 모달 오류:', error);
+        showAlert('로그인 처리 중 오류가 발생했습니다.', 'danger');
+    }
+}
+
+// 관리자 UI로 전환
+function showAdminUI() {
+    // 관리자용 UI 요소 표시
+    const adminElements = document.querySelectorAll('.admin-only');
+    adminElements.forEach(el => {
+        el.classList.remove('d-none');
+    });
+    
+    // 로그인 버튼을 로그아웃 버튼으로 변경
+    const loginBtn = document.getElementById('loginBtn');
+    if (loginBtn) {
+        loginBtn.innerHTML = '<i class="bi bi-box-arrow-right me-1"></i>로그아웃';
+        loginBtn.removeEventListener('click', handleLogin);
+        loginBtn.addEventListener('click', handleLogout);
+    }
+    
+    // 관리자 권한으로 법안 목록 새로고침
+    loadBills();
+}
+
+// 로그아웃 처리
+async function handleLogout() {
+    try {
+        // 로그아웃 처리 중 표시
+        const loginBtn = document.getElementById('loginBtn');
+        if (loginBtn) {
+            loginBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>로그아웃 중...';
+            loginBtn.disabled = true;
+        }
+        
+        const { error } = await supabaseClient.auth.signOut();
+        
+        if (error) throw error;
+        
+        // 로그아웃 버튼을 로그인 버튼으로 변경
+        if (loginBtn) {
+            loginBtn.innerHTML = '<i class="bi bi-person-fill me-1"></i>관리자 로그인';
+            loginBtn.disabled = false;
+            loginBtn.removeEventListener('click', handleLogout);
+            loginBtn.addEventListener('click', handleLogin);
+        }
+        
+        // 관리자용 UI 요소 숨김
+        const adminElements = document.querySelectorAll('.admin-only');
+        adminElements.forEach(el => {
+            el.classList.add('d-none');
+        });
+        
+        showAlert('로그아웃되었습니다.', 'success');
+        
+        // 목록 새로고침 (관리자 권한 없는 상태로)
+        loadBills();
+    } catch (error) {
+        console.error('로그아웃 오류:', error);
+        showAlert('로그아웃 중 오류가 발생했습니다.', 'danger');
+        
+        // 오류 발생 시 버튼 상태 복원
+        const loginBtn = document.getElementById('loginBtn');
+        if (loginBtn) {
+            loginBtn.innerHTML = '<i class="bi bi-box-arrow-right me-1"></i>로그아웃';
+            loginBtn.disabled = false;
+        }
+    }
+}
+
+// 세션 상태 확인
+async function checkSession() {
+    try {
+        const { data, error } = await supabaseClient.auth.getSession();
+        
+        if (error) {
+            console.error('세션 확인 오류:', error);
+            return;
+        }
+        
+        // 현재 세션이 있는 경우 관리자 UI 표시
+        if (data.session) {
+            console.log('사용자 세션 발견:', data.session.user.email);
+            
+            // 권한 확인
+            checkUserRole(data.session.user);
+            
+            // UI 업데이트
+            showAdminUI();
+        }
+    } catch (error) {
+        console.error('세션 확인 중 오류 발생:', error);
+    }
+}
+
+// 사용자 권한 확인
+async function checkUserRole(user) {
+    try {
+        // 사용자 메타데이터에서 role 확인
+        if (user.user_metadata && user.user_metadata.role === 'admin') {
+            console.log('관리자 권한 확인됨');
+            return true;
+        }
+        
+        // Supabase에서 profiles 테이블 확인
+        const { data, error } = await supabaseClient
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+        
+        if (error) {
+            console.error('사용자 프로필 조회 오류:', error);
+            return false;
+        }
+        
+        if (data && data.role === 'admin') {
+            console.log('프로필에서 관리자 권한 확인됨');
+            return true;
+        }
+        
+        console.log('관리자 권한 없음:', data);
+        showAlert('관리자 권한이 없습니다.', 'warning');
+        
+        // 관리자 권한이 없으면 로그아웃
+        handleLogout();
+        return false;
+    } catch (error) {
+        console.error('권한 확인 오류:', error);
+        return false;
     }
 } 
