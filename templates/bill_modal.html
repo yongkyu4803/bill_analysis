@@ -1,14 +1,13 @@
-<!-- 법안 상세 모달 -->
 <div class="modal fade" id="billDetailModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="billDetailTitle"></h5>
+            <div class="modal-header py-2 py-sm-3">
+                <h5 class="modal-title fs-6 fs-sm-5" id="billDetailTitle"></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <div class="d-flex gap-4">
+            <div class="modal-body p-3 p-sm-4">
+                <div class="mb-2 mb-sm-3">
+                    <div class="d-flex flex-column flex-sm-row gap-2 gap-sm-4">
                         <div>
                             <span class="text-muted">제안자:</span>
                             <span id="billDetailProposer"></span>
@@ -19,11 +18,11 @@
                         </div>
                     </div>
                 </div>
-                <div class="mb-4">
-                    <div class="p-3 bg-light rounded" id="billDetailContent"></div>
+                <div class="mb-3 mb-sm-4">
+                    <div class="p-2 p-sm-3 bg-light rounded" id="billDetailContent"></div>
                 </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer py-2">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
             </div>
         </div>
