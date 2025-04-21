@@ -204,16 +204,6 @@ function renderBillList(bills) {
         `;
     });
     
-    html += `
-                </tbody>
-            </table>
-        </div>
-        <div class="mt-3">
-            <button id="deleteSelectedBtn" class="btn btn-danger" disabled>
-                <i class="bi bi-trash"></i> 선택 항목 삭제
-            </button>
-        </div>
-    `;
     
     billListElement.innerHTML = html;
     
