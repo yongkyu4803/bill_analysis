@@ -45,6 +45,9 @@ async function testSupabaseConnection() {
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
+    // 모달 템플릿 로드
+    loadModalTemplates();
+    
     // Supabase 연결 테스트
     const isConnected = await testSupabaseConnection();
     
@@ -642,4 +645,27 @@ function showAlert(message, type) {
             alertEl.remove();
         }, 150);
     }, 5000);
+}
+
+// 모달 템플릿 로드 함수
+async function loadModalTemplates() {
+    try {
+        // 모달 템플릿 로드
+        const modalContainer = document.getElementById('modalContainer');
+        if (!modalContainer) return;
+        
+        // 법안 상세 모달 템플릿 로드
+        const response = await fetch('templates/bill_modal.html');
+        if (!response.ok) {
+            throw new Error(`모달 템플릿을 로드할 수 없습니다: ${response.status}`);
+        }
+        
+        const modalTemplate = await response.text();
+        modalContainer.innerHTML = modalTemplate;
+        
+        console.log('모달 템플릿이 성공적으로 로드되었습니다.');
+    } catch (error) {
+        console.error('모달 템플릿 로드 오류:', error);
+        showAlert('모달 템플릿을 로드하는 중 오류가 발생했습니다.', 'danger');
+    }
 } 

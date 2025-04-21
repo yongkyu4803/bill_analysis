@@ -116,36 +116,9 @@
         </div>
     </main>
 
-    <!-- 법안 상세 모달 -->
-    <div class="modal fade" id="billDetailModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="billDetailTitle"></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <div class="d-flex gap-4">
-                            <div>
-                                <span class="text-muted">제안자:</span>
-                                <span id="billDetailProposer"></span>
-                            </div>
-                            <div>
-                                <span class="text-muted">등록일:</span>
-                                <span id="billDetailDate"></span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mb-4">
-                        <div class="p-3 bg-light rounded" id="billDetailContent"></div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
-                </div>
-            </div>
-        </div>
+    <!-- 모달 템플릿 로드 -->
+    <div id="modalContainer">
+        <!-- 여기에 모달이 동적으로 로드됩니다 -->
     </div>
 
     <!-- 알림 컨테이너 -->
