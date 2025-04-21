@@ -1,30 +1,358 @@
 // 전역 변수
 let bills = [];
 let currentBill = null;
+let isAdmin = false; // 관리자 권한 상태 저장
+let currentUser = null; // 현재 로그인한 사용자
 
 // Supabase 초기화
 const SUPABASE_URL = 'https://your-supabase-url.supabase.co';
 const SUPABASE_ANON_KEY = 'your-supabase-anon-key';
-// supabase 변수는 DOMContentLoaded 내에서만 선언합니다
+let supabase = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     // Supabase 클라이언트 초기화
-    const supabase = supabaseClient.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    
-    // 초기 데이터 로드
-    fetchBills();
+    try {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // 세션 확인 및 사용자 상태 복원
+        checkSession();
+        
+        // 초기 데이터 로드
+        fetchBills();
+    } catch (error) {
+        console.error('Supabase 초기화 오류:', error);
+        showAlert('데이터베이스 연결에 실패했습니다.', 'danger');
+    }
 
     // 이벤트 리스너 설정
     document.getElementById('addBillBtn').addEventListener('click', () => openBillModal());
     document.getElementById('saveBillBtn').addEventListener('click', saveBill);
     document.getElementById('editBillBtn').addEventListener('click', editCurrentBill);
     
+    // 로그인 버튼이 있는 경우에만 이벤트 리스너 추가
+    const loginBtn = document.getElementById('loginBtn');
+    if (loginBtn) {
+        loginBtn.addEventListener('click', openLoginModal);
+    }
+    
     // 검색 기능
     document.getElementById('searchInput').addEventListener('input', function(e) {
         const searchTerm = e.target.value.toLowerCase();
         filterBills(searchTerm);
     });
+    
+    // 권한에 따른 UI 초기화
+    updateUIByPermission();
+
+    // Supabase가 초기화된 후 초기 설정 실행
+    setTimeout(() => {
+        if (supabase) {
+            initializeSupabase().catch(err => {
+                console.error('Supabase 초기 설정 오류:', err);
+            });
+        }
+    }, 1000);
 });
+
+// 세션 확인 및 로그인 상태 복원
+async function checkSession() {
+    try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) throw error;
+        
+        if (data && data.session) {
+            currentUser = data.session.user;
+            // 관리자 역할 확인
+            await checkUserRole();
+        }
+    } catch (error) {
+        console.error('세션 확인 오류:', error);
+    }
+}
+
+// 사용자 역할 확인
+async function checkUserRole() {
+    if (!currentUser) return;
+    
+    try {
+        // 사용자 정보 조회 - Supabase에서 사용자 메타데이터 또는 역할 테이블 확인
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', currentUser.id)
+            .single();
+            
+        if (error) throw error;
+        
+        // 관리자 역할인지 확인
+        isAdmin = data && data.role === 'admin';
+        updateUIByPermission();
+        
+    } catch (error) {
+        console.error('사용자 역할 확인 오류:', error);
+    }
+}
+
+// 관리자 권한에 따른 UI 업데이트
+function updateUIByPermission() {
+    // 관리자 권한이 필요한 버튼들
+    const adminOnlyElements = [
+        document.getElementById('addBillBtn'),
+        ...document.querySelectorAll('.admin-only')
+    ];
+    
+    // 권한에 따라 표시/숨김 처리
+    adminOnlyElements.forEach(element => {
+        if (element) {
+            element.style.display = isAdmin ? 'inline-flex' : 'none';
+        }
+    });
+    
+    // 로그인 버튼 텍스트 변경
+    const loginBtn = document.getElementById('loginBtn');
+    if (loginBtn) {
+        if (currentUser) {
+            loginBtn.innerHTML = '<i class="bi bi-person-fill me-1"></i>로그아웃';
+        } else {
+            loginBtn.innerHTML = '<i class="bi bi-person-fill me-1"></i>로그인';
+        }
+    }
+}
+
+// 로그인 모달 열기
+function openLoginModal() {
+    // 이미 로그인된 상태라면 로그아웃
+    if (currentUser) {
+        logout();
+        return;
+    }
+    
+    // 모달 HTML 생성
+    const modalHtml = `
+        <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">로그인</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="loginForm">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">이메일</label>
+                                <input type="email" class="form-control" id="email" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">비밀번호</label>
+                                <input type="password" class="form-control" id="password" required>
+                            </div>
+                        </form>
+                        <div class="mt-3">
+                            <p class="text-center mb-2">또는</p>
+                            <button type="button" class="btn btn-outline-secondary w-100 mb-2" id="googleLoginBtn">
+                                <i class="bi bi-google me-2"></i>Google 계정으로 로그인
+                            </button>
+                            <p class="small text-center mt-3">
+                                계정이 없으신가요? <a href="#" id="showSignupBtn">회원가입</a>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                        <button type="button" class="btn btn-primary" id="doLoginBtn">로그인</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 기존 모달 제거 후 추가
+    const existingModal = document.getElementById('loginModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // 로그인 버튼 이벤트 추가
+    document.getElementById('doLoginBtn').addEventListener('click', loginWithEmail);
+    document.getElementById('googleLoginBtn').addEventListener('click', loginWithGoogle);
+    document.getElementById('showSignupBtn').addEventListener('click', showSignupForm);
+    
+    // 모달 표시
+    const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+    loginModal.show();
+}
+
+// 회원가입 폼 표시
+function showSignupForm() {
+    // 모달 닫기
+    const loginModal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
+    loginModal.hide();
+    
+    // 회원가입 모달 HTML
+    const signupModalHtml = `
+        <div class="modal fade" id="signupModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">회원가입</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="signupForm">
+                            <div class="mb-3">
+                                <label for="signupEmail" class="form-label">이메일</label>
+                                <input type="email" class="form-control" id="signupEmail" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="signupPassword" class="form-label">비밀번호</label>
+                                <input type="password" class="form-control" id="signupPassword" required>
+                                <div class="form-text">비밀번호는 최소 6자 이상이어야 합니다.</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="confirmPassword" class="form-label">비밀번호 확인</label>
+                                <input type="password" class="form-control" id="confirmPassword" required>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                        <button type="button" class="btn btn-primary" id="doSignupBtn">가입하기</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 모달 추가
+    document.body.insertAdjacentHTML('beforeend', signupModalHtml);
+    
+    // 회원가입 버튼 이벤트 추가
+    document.getElementById('doSignupBtn').addEventListener('click', signup);
+    
+    // 모달 표시
+    const signupModal = new bootstrap.Modal(document.getElementById('signupModal'));
+    signupModal.show();
+}
+
+// 이메일/비밀번호로 로그인
+async function loginWithEmail() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    
+    if (!email || !password) {
+        showAlert('이메일과 비밀번호를 입력해주세요.', 'warning');
+        return;
+    }
+    
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password
+        });
+        
+        if (error) throw error;
+        
+        // 로그인 성공
+        currentUser = data.user;
+        
+        // 관리자 역할 확인
+        await checkUserRole();
+        
+        // 모달 닫기
+        const loginModal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
+        loginModal.hide();
+        
+        showAlert('로그인되었습니다.', 'success');
+    } catch (error) {
+        console.error('로그인 오류:', error);
+        showAlert('로그인에 실패했습니다: ' + error.message, 'danger');
+    }
+}
+
+// Google로 로그인
+async function loginWithGoogle() {
+    try {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.origin
+            }
+        });
+        
+        if (error) throw error;
+        
+        // OAuth 리디렉션이 진행됨
+    } catch (error) {
+        console.error('Google 로그인 오류:', error);
+        showAlert('Google 로그인에 실패했습니다: ' + error.message, 'danger');
+    }
+}
+
+// 회원가입
+async function signup() {
+    const email = document.getElementById('signupEmail').value;
+    const password = document.getElementById('signupPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    
+    if (!email || !password) {
+        showAlert('이메일과 비밀번호를 입력해주세요.', 'warning');
+        return;
+    }
+    
+    if (password !== confirmPassword) {
+        showAlert('비밀번호가 일치하지 않습니다.', 'warning');
+        return;
+    }
+    
+    if (password.length < 6) {
+        showAlert('비밀번호는 6자 이상이어야 합니다.', 'warning');
+        return;
+    }
+    
+    try {
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    role: 'user' // 기본 역할은 일반 사용자
+                }
+            }
+        });
+        
+        if (error) throw error;
+        
+        // 회원가입 성공
+        const signupModal = bootstrap.Modal.getInstance(document.getElementById('signupModal'));
+        signupModal.hide();
+        
+        showAlert('회원가입이 완료되었습니다. 이메일 확인을 통해 계정을 활성화해주세요.', 'success');
+    } catch (error) {
+        console.error('회원가입 오류:', error);
+        showAlert('회원가입에 실패했습니다: ' + error.message, 'danger');
+    }
+}
+
+// 로그아웃
+async function logout() {
+    try {
+        const { error } = await supabase.auth.signOut();
+        
+        if (error) throw error;
+        
+        // 로그아웃 성공
+        currentUser = null;
+        isAdmin = false;
+        updateUIByPermission();
+        
+        showAlert('로그아웃되었습니다.', 'info');
+    } catch (error) {
+        console.error('로그아웃 오류:', error);
+        showAlert('로그아웃에 실패했습니다: ' + error.message, 'danger');
+    }
+}
 
 // 법안 목록 가져오기
 async function fetchBills() {
@@ -68,7 +396,7 @@ function renderBillList(bills) {
                     <button class="btn btn-sm btn-outline-primary" onclick="viewBillDetails(${bill.id})">
                         <i class="bi bi-eye"></i>
                     </button>
-                    <button class="btn btn-sm btn-outline-secondary" onclick="openBillModal(${bill.id})">
+                    <button class="btn btn-sm btn-outline-secondary admin-only" onclick="openBillModal(${bill.id})" style="${isAdmin ? '' : 'display:none;'}">
                         <i class="bi bi-pencil"></i>
                     </button>
                 </td>
@@ -140,6 +468,9 @@ async function viewBillDetails(billId) {
         // 현재 선택된 법안 ID 저장
         document.querySelector('#editBillBtn').dataset.billId = billId;
         
+        // 관리자 권한에 따라 편집 버튼 표시 여부 설정
+        document.querySelector('#editBillBtn').style.display = isAdmin ? 'inline-block' : 'none';
+        
         // 모달 표시
         const billDetailModal = new bootstrap.Modal(document.getElementById('billDetailModal'));
         billDetailModal.show();
@@ -151,6 +482,12 @@ async function viewBillDetails(billId) {
 
 // 법안 등록/수정 모달 열기
 async function openBillModal(billId = null) {
+    // 관리자가 아니면 접근 차단
+    if (!isAdmin) {
+        showAlert('관리자 권한이 필요합니다.', 'warning');
+        return;
+    }
+    
     // 모달 내용 초기화
     document.getElementById('billId').value = '';
     document.getElementById('billName').value = '';
@@ -190,6 +527,12 @@ async function openBillModal(billId = null) {
 
 // 법안 저장 (등록/수정)
 async function saveBill() {
+    // 관리자가 아니면 접근 차단
+    if (!isAdmin) {
+        showAlert('관리자 권한이 필요합니다.', 'warning');
+        return;
+    }
+    
     const billId = document.getElementById('billId').value;
     const name = document.getElementById('billName').value.trim();
     const proposer = document.getElementById('billProposer').value.trim();
@@ -244,6 +587,12 @@ async function saveBill() {
 
 // 현재 선택된 법안 수정하기
 function editCurrentBill() {
+    // 관리자가 아니면 접근 차단
+    if (!isAdmin) {
+        showAlert('관리자 권한이 필요합니다.', 'warning');
+        return;
+    }
+    
     const billId = document.querySelector('#editBillBtn').dataset.billId;
     
     if (billId) {
@@ -538,4 +887,69 @@ function showAnalysisReport() {
         `);
         iframeDoc.close();
     }, 100);
+}
+
+// Supabase 초기 설정 실행
+async function initializeSupabase() {
+    try {
+        // 사용자 프로필 테이블이 있는지 확인
+        const { data: tables, error: tableError } = await supabase
+            .from('information_schema.tables')
+            .select('table_name')
+            .eq('table_schema', 'public')
+            .eq('table_name', 'profiles');
+
+        if (tableError) throw tableError;
+        
+        // 테이블이 없으면 생성
+        if (!tables || tables.length === 0) {
+            // 프로필 테이블 생성
+            const createProfilesSQL = `
+            CREATE TABLE IF NOT EXISTS profiles (
+                id UUID REFERENCES auth.users(id) PRIMARY KEY,
+                email TEXT UNIQUE NOT NULL,
+                role TEXT DEFAULT 'user' NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
+            );
+
+            -- RLS 정책 설정
+            ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+            -- 사용자는 자신의 프로필만 볼 수 있음
+            CREATE POLICY "사용자는 자신의 프로필을 볼 수 있음" ON profiles
+                FOR SELECT USING (auth.uid() = id);
+
+            -- 사용자는 자신의 프로필만 업데이트할 수 있음
+            CREATE POLICY "사용자는 자신의 프로필을 업데이트할 수 있음" ON profiles
+                FOR UPDATE USING (auth.uid() = id);
+
+            -- 새 사용자가 등록되면 프로필을 자동으로 생성하는 트리거
+            CREATE OR REPLACE FUNCTION public.handle_new_user()
+            RETURNS TRIGGER AS $$
+            BEGIN
+                INSERT INTO public.profiles (id, email, role)
+                VALUES (NEW.id, NEW.email, 'user');
+                RETURN NEW;
+            END;
+            $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+            -- auth.users 테이블에 트리거 연결
+            DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+            CREATE TRIGGER on_auth_user_created
+                AFTER INSERT ON auth.users
+                FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+            `;
+
+            // SQL 실행
+            const { error: sqlError } = await supabase.rpc('execute_sql', { sql: createProfilesSQL });
+            if (sqlError) throw sqlError;
+            
+            console.log('프로필 테이블이 성공적으로 생성되었습니다.');
+        } else {
+            console.log('프로필 테이블이 이미 존재합니다.');
+        }
+    } catch (error) {
+        console.error('Supabase 초기화 오류:', error);
+    }
 } 
