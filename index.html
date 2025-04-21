@@ -3,64 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>간단한 데이터 관리 웹 뷰</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/form.css">
+    <meta name="description" content="법안 관리 시스템 - 법안 등록, 검토, 처리를 위한 웹 애플리케이션">
+    <meta name="author" content="yongkyu4803">
+    <title>법안 관리 시스템</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- 커스텀 CSS -->
+    <link href="css/style.css" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>데이터 관리 시스템</h1>
-            <nav>
-                <ul>
-                    <li><a href="index.html" class="active">메인</a></li>
-                    <li><a href="edit.html">데이터 수정</a></li>
-                    <li><a href="preview.html">미리보기</a></li>
-                </ul>
-            </nav>
-        </header>
-
-        <main>
-            <section class="form-section">
-                <h2>새 데이터 입력</h2>
-                <form id="dataForm">
-                    <div class="form-group">
-                        <label for="title">제목</label>
-                        <input type="text" id="title" name="title" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="author">작성자</label>
-                        <input type="text" id="author" name="author" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="content">내용</label>
-                        <textarea id="content" name="content" rows="10" required></textarea>
-                    </div>
-                    
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">저장</button>
-                        <button type="reset" class="btn btn-secondary">초기화</button>
-                    </div>
-                </form>
-            </section>
-
-            <section class="data-list">
-                <h2>저장된 데이터 목록</h2>
-                <div id="pageList" class="page-list">
-                    <!-- JavaScript로 동적 생성됨 -->
+    <header class="bg-primary text-white py-3 shadow-sm">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="mb-0 fs-3">법안 관리 시스템</h1>
+                <div class="input-group w-50">
+                    <input type="text" id="searchInput" class="form-control" placeholder="법안 검색...">
+                    <button class="btn btn-light" type="button" id="searchBtn">
+                        <i class="bi bi-search"></i>
+                    </button>
                 </div>
-            </section>
-        </main>
+            </div>
+        </div>
+    </header>
 
-        <footer>
-            <p>간단한 데이터 관리 웹 뷰 &copy; 2023</p>
-        </footer>
+    <main class="container my-4">
+        <div class="row">
+            <!-- 법안 목록 -->
+            <div class="col-lg-8">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="fs-4">법안 목록</h2>
+                    <div>
+                        <button class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#formContainer">
+                            <i class="bi bi-plus-lg me-1"></i> 새 법안 등록
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 법안 등록 폼 -->
+                <div id="formContainer" class="collapse mb-4">
+                    <div class="form-container">
+                        <h3 class="fs-5 mb-3">법안 등록</h3>
+                        <form id="billForm">
+                            <div class="mb-3">
+                                <label for="billTitle" class="form-label">법안 제목</label>
+                                <input type="text" class="form-control" id="billTitle" name="billTitle" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="billProposer" class="form-label">제안자</label>
+                                <input type="text" class="form-control" id="billProposer" name="billProposer" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="billContent" class="form-label">법안 내용</label>
+                                <textarea class="form-control" id="billContent" name="billContent" rows="4" required></textarea>
+                            </div>
+                            <div class="text-end">
+                                <button type="button" class="btn btn-outline-secondary me-2" data-bs-toggle="collapse" data-bs-target="#formContainer">
+                                    취소
+                                </button>
+                                <button type="submit" class="btn btn-primary">등록</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- 법안 목록 표시 영역 -->
+                <div id="billList" class="bill-list"></div>
+            </div>
+            
+            <!-- 사이드바 (통계 등) -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h3 class="fs-5 mb-0">법안 처리 현황</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>총 등록 법안</span>
+                                <span class="badge bg-info">0</span>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-info" style="width: 100%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mt-4">
+                    <div class="card-header bg-light">
+                        <h3 class="fs-5 mb-0">공지사항</h3>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item px-0">
+                                <div class="d-flex justify-content-between">
+                                    <span>(test)법안 관리 시스템 업데이트 안내</span>
+                                    <span class="text-muted small">2025-04-21</span>
+                                </div>
+                            </li>
+                            <li class="list-group-item px-0">
+                                <div class="d-flex justify-content-between">
+                                    <span>(test)개인정보 보호 조치 강화 안내</span>
+                                    <span class="text-muted small">2025-04-21</span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 법안 상세 모달 -->
+    <div class="modal fade" id="billDetailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="billDetailTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <div class="d-flex gap-4">
+                            <div>
+                                <span class="text-muted">제안자:</span>
+                                <span id="billDetailProposer"></span>
+                            </div>
+                            <div>
+                                <span class="text-muted">등록일:</span>
+                                <span id="billDetailDate"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="p-3 bg-light rounded" id="billDetailContent"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script src="js/storage.js"></script>
-    <script src="js/form.js"></script>
-    <script src="js/main.js"></script>
+    <!-- 알림 컨테이너 -->
+    <div id="alertContainer"></div>
+
+    <!-- 먼저 Supabase 라이브러리를 불러옵니다 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.5/dist/umd/supabase.min.js"></script>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- 커스텀 JS -->
+    <script src="public/js/app.js"></script>
 </body>
 </html> 

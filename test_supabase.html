@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase API 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Supabase API 테스트</h1>
+        <div class="controls">
+            <button id="testInsert">데이터 추가 테스트</button>
+            <button id="testSelect">데이터 조회 테스트</button>
+            <button id="clearLog">로그 지우기</button>
+        </div>
+        <h2>로그:</h2>
+        <pre id="log"></pre>
+    </div>
+
+    <script>
+        // 로그 출력 함수
+        function log(message) {
+            const logElement = document.getElementById('log');
+            if (typeof message === 'object') {
+                message = JSON.stringify(message, null, 2);
+            }
+            logElement.textContent += message + '\n';
+            console.log(message);
+        }
+
+        // 설정
+        const SUPABASE_URL = 'https://rxwztfdnragffxbmlscf.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4d3p0ZmRucmFnZmZ4Ym1sc2NmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI0NzU2MDgsImV4cCI6MjA1ODA1MTYwOH0.KN8cR6_xHHHfuF1odUi9WwzkbOHCmwuRaK0FYe7b0Ig';
+
+        // 테스트 데이터
+        const testData = {
+            bill_name: '테스트 법안 ' + new Date().toISOString(),
+            writer: '테스트 제안자',
+            description: '테스트 내용'
+        };
+
+        // 데이터 삽입 테스트
+        async function testInsert() {
+            log('데이터 삽입 요청 시작...');
+            log('요청 데이터:');
+            log(testData);
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/bill`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                log('응답 상태: ' + response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    log('오류 발생: ' + errorText);
+                    return;
+                }
+                
+                log('데이터 삽입 성공!');
+            } catch (error) {
+                log('요청 중 오류 발생: ' + error.message);
+            }
+        }
+
+        // 데이터 조회 테스트
+        async function testSelect() {
+            log('데이터 조회 요청 시작...');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/bill?select=*`, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                
+                log('응답 상태: ' + response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    log('오류 발생: ' + errorText);
+                    return;
+                }
+                
+                const data = await response.json();
+                log('조회된 데이터:');
+                log(data);
+            } catch (error) {
+                log('요청 중 오류 발생: ' + error.message);
+            }
+        }
+
+        // 이벤트 리스너 설정
+        document.getElementById('testInsert').addEventListener('click', testInsert);
+        document.getElementById('testSelect').addEventListener('click', testSelect);
+        document.getElementById('clearLog').addEventListener('click', () => {
+            document.getElementById('log').textContent = '';
+        });
+
+        // 초기 메시지
+        log('Supabase API 테스트 페이지가 로드되었습니다.');
+        log(`URL: ${SUPABASE_URL}`);
+        log('버튼을 클릭하여 테스트를 시작하세요.');
+    </script>
+</body>
+</html> 
