@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>미리보기 - 간단한 데이터 관리 웹 뷰</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>데이터 관리 시스템</h1>
+            <nav>
+                <ul>
+                    <li><a href="index.html">메인</a></li>
+                    <li><a href="edit.html">데이터 수정</a></li>
+                    <li><a href="preview.html" class="active">미리보기</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            <section class="preview-section">
+                <h2>HTML 미리보기</h2>
+                <div class="page-selector">
+                    <label for="previewSelect">페이지 선택:</label>
+                    <select id="previewSelect">
+                        <option value="">-- 페이지 선택 --</option>
+                        <!-- JavaScript로 동적 생성됨 -->
+                    </select>
+                </div>
+
+                <div class="preview-actions">
+                    <button id="viewBtn" class="btn btn-primary" disabled>새 탭에서 보기</button>
+                    <button id="downloadBtn" class="btn btn-secondary" disabled>HTML 다운로드</button>
+                </div>
+
+                <div class="preview-container">
+                    <div id="previewFrame">
+                        <!-- 미리보기 내용이 여기에 표시됩니다 -->
+                        <div class="placeholder-message">
+                            페이지를 선택하면 미리보기가 여기에 표시됩니다.
+                        </div>
+                    </div>
+                </div>
+
+                <div id="noPreviewData" class="message hidden">
+                    저장된 데이터가 없습니다. <a href="index.html">메인 페이지</a>에서 새 데이터를 추가하세요.
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>간단한 데이터 관리 웹 뷰 &copy; 2023</p>
+        </footer>
+    </div>
+
+    <script src="js/storage.js"></script>
+    <script src="js/generator.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html> 

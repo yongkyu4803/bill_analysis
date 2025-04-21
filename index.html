@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>간단한 데이터 관리 웹 뷰</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/form.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>데이터 관리 시스템</h1>
+            <nav>
+                <ul>
+                    <li><a href="index.html" class="active">메인</a></li>
+                    <li><a href="edit.html">데이터 수정</a></li>
+                    <li><a href="preview.html">미리보기</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            <section class="form-section">
+                <h2>새 데이터 입력</h2>
+                <form id="dataForm">
+                    <div class="form-group">
+                        <label for="title">제목</label>
+                        <input type="text" id="title" name="title" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="author">작성자</label>
+                        <input type="text" id="author" name="author" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="content">내용</label>
+                        <textarea id="content" name="content" rows="10" required></textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">저장</button>
+                        <button type="reset" class="btn btn-secondary">초기화</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="data-list">
+                <h2>저장된 데이터 목록</h2>
+                <div id="pageList" class="page-list">
+                    <!-- JavaScript로 동적 생성됨 -->
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>간단한 데이터 관리 웹 뷰 &copy; 2023</p>
+        </footer>
+    </div>
+
+    <script src="js/storage.js"></script>
+    <script src="js/form.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html> 

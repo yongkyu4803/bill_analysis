@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>데이터 수정 - 간단한 데이터 관리 웹 뷰</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/form.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>데이터 관리 시스템</h1>
+            <nav>
+                <ul>
+                    <li><a href="index.html">메인</a></li>
+                    <li><a href="edit.html" class="active">데이터 수정</a></li>
+                    <li><a href="preview.html">미리보기</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            <section class="edit-section">
+                <h2>데이터 수정</h2>
+                <div class="page-selector">
+                    <label for="pageSelect">수정할 페이지 선택:</label>
+                    <select id="pageSelect">
+                        <option value="">-- 페이지 선택 --</option>
+                        <!-- JavaScript로 동적 생성됨 -->
+                    </select>
+                </div>
+
+                <form id="editForm" class="hidden">
+                    <input type="hidden" id="pageId" name="pageId">
+                    
+                    <div class="form-group">
+                        <label for="editTitle">제목</label>
+                        <input type="text" id="editTitle" name="title" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editAuthor">작성자</label>
+                        <input type="text" id="editAuthor" name="author" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editContent">내용</label>
+                        <textarea id="editContent" name="content" rows="10" required></textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">수정 완료</button>
+                        <button type="button" id="deleteBtn" class="btn btn-danger">삭제</button>
+                        <button type="button" id="cancelBtn" class="btn btn-secondary">취소</button>
+                    </div>
+                </form>
+
+                <div id="noDataMessage" class="message hidden">
+                    저장된 데이터가 없습니다. <a href="index.html">메인 페이지</a>에서 새 데이터를 추가하세요.
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>간단한 데이터 관리 웹 뷰 &copy; 2023</p>
+        </footer>
+    </div>
+
+    <script src="js/storage.js"></script>
+    <script src="js/form.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html> 
