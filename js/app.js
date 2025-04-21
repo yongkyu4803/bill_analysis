@@ -170,10 +170,10 @@ function renderBillList(bills) {
                                 <input class="form-check-input" type="checkbox" id="selectAll">
                             </div>
                         </th>
-                        <th>법안명</th>
-                        <th>제안자</th>
-                        <th>등록일</th>
-                        <th>관리</th>
+                        <th style="width: 50%;">법안명</th>
+                        <th style="width: 15%;">제안자</th>
+                        <th style="width: 15%;">등록일</th>
+                        <th style="width: 20%;">관리</th>
                     </tr>
                 </thead>
                 <tbody>
