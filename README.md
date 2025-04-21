@@ -74,3 +74,8 @@ cd data-management-web-view
 - JavaScript (ES6+)
 - localStorage API
 - Vercel 배포 
+
+
+## bcakups 참조금지
+
+ - backups 폴더의 파일은 애플리케이션에 참조 금지지
