@@ -518,7 +518,9 @@ th {
   header .input-group {
     width: 300px;
   }
-  
+  .table th, .table td {
+    padding: 0.5rem 0.25rem;  /* 모바일에서는 좌우 패딩이 더 작음: 0.25rem */
+  }
   .modal-dialog {
     max-width: 700px;
   }
