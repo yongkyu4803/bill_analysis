@@ -256,11 +256,10 @@ function renderBillList(bills) {
             <table class="table table-hover table-sm">
                 <thead>
                     <tr>
-                        <th style="width: 12%;">상임위</th>
-                        <th style="width: 28%;">법안명</th>
-                        <th style="width: 25%;">제안</th>
-                        <th style="width: 25%;">등록</th>
-                        <th style="width: 10%;">보기</th>
+                        <th style="width: 15%;">상임위</th>
+                        <th style="width: 50%;">법안명</th>
+                        <th style="width: 15%;">제안</th>
+                        <th style="width: 20%;">등록</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -277,26 +276,75 @@ function renderBillList(bills) {
         html += `
             <tr>
                 <td>${committeeBadge}</td>
-                <td class="text-truncate">${bill.bill_name}</td>
+                <td class="bill-title cursor-pointer" data-id="${bill.id}">${bill.bill_name}</td>
                 <td>${bill.writer}</td>
                 <td>${date}</td>
-                <td>
-                    <button class="btn btn-sm btn-primary view-bill" data-id="${bill.id}" title="상세보기">
-                        <i class="bi bi-eye"></i>
-                    </button>
-                    <button class="btn btn-sm btn-warning edit-bill admin-only ${adminBtnClass}" data-id="${bill.id}" title="수정">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="btn btn-sm btn-danger delete-bill admin-only ${adminBtnClass}" data-id="${bill.id}" title="삭제">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </td>
             </tr>
         `;
     });
     
+    // 관리자 로그인 시에만 관리 버튼 표시
+    if (isAdminLoggedIn) {
+        html += `
+            </tbody>
+            </table>
+        </div>
+        
+        <div class="table-responsive mt-3">
+            <table class="table table-hover table-sm">
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">상임위</th>
+                        <th style="width: 50%;">법안명</th>
+                        <th style="width: 35%;">관리</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        bills.forEach(bill => {
+            // 상임위 배지 스타일 적용
+            const committee = bill.committee || '';
+            const committeeBadge = committee ? 
+                `<span class="badge rounded-pill bg-light text-dark border">${committee}</span>` : '';
+            
+            html += `
+                <tr>
+                    <td>${committeeBadge}</td>
+                    <td class="bill-title cursor-pointer" data-id="${bill.id}">${bill.bill_name}</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning edit-bill admin-only" data-id="${bill.id}" title="수정">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger delete-bill admin-only" data-id="${bill.id}" title="삭제">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+    
+    html += `
+            </tbody>
+        </table>
+    </div>
+    `;
     
     billListElement.innerHTML = html;
+    
+    // CSS 스타일 추가
+    const style = document.createElement('style');
+    style.innerHTML = `
+        .cursor-pointer {
+            cursor: pointer;
+        }
+        .bill-title:hover {
+            text-decoration: underline;
+            color: #0d6efd;
+        }
+    `;
+    document.head.appendChild(style);
     
     // 이벤트 리스너 추가
     addBillListEventListeners();
@@ -304,9 +352,9 @@ function renderBillList(bills) {
 
 // 법안 목록의 이벤트 리스너 추가
 function addBillListEventListeners() {
-    // 상세 보기 버튼
-    document.querySelectorAll('.view-bill').forEach(btn => {
-        btn.addEventListener('click', function() {
+    // 법안명 클릭 시 상세 보기
+    document.querySelectorAll('.bill-title').forEach(title => {
+        title.addEventListener('click', function() {
             const billId = this.getAttribute('data-id');
             viewBillDetails(billId);
         });
