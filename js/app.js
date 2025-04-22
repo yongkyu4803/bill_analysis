@@ -257,9 +257,9 @@ function renderBillList(bills) {
                 <thead>
                     <tr>
                         <th style="width: 10%;">상임위</th>
-                        <th style="width: 40%;">법안명</th>
-                        <th style="width: 15%;">제안</th>
-                        <th style="width: 15%;">등록</th>
+                        <th style="width: 30%;">법안명</th>
+                        <th style="width: 20%;">제안</th>
+                        <th style="width: 20%;">등록</th>
                         <th style="width: 20%;">보기</th>
                     </tr>
                 </thead>
