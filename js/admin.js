@@ -116,9 +116,106 @@ function updateUIForUnauthenticatedUser() {
   `;
 }
 
+// 모달 템플릿 로드 함수
+function loadModalTemplates() {
+  const modalContainer = document.getElementById('modalContainer');
+  
+  // 단순화된 모달 템플릿 사용
+  const basicModalTemplate = `
+    <!-- 로그인 모달 -->
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="loginModalTitle">관리자 로그인</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="loginModalBody">
+            <!-- 내용은 동적으로 삽입됩니다 -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 상세 보기 모달 -->
+    <div class="modal fade" id="viewBillModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="viewBillModalTitle">법안 상세 보기</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="viewBillModalBody">
+            <!-- 내용은 동적으로 삽입됩니다 -->
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 삭제 확인 모달 -->
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="deleteConfirmModalTitle">삭제 확인</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="deleteConfirmModalBody">
+            <!-- 내용은 동적으로 삽입됩니다 -->
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+            <button type="button" class="btn btn-danger" id="confirmDeleteBtn">삭제</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // 모달 템플릿을 컨테이너에 추가
+  modalContainer.innerHTML = basicModalTemplate;
+}
+
 // 로그인 모달 표시 함수
 function showLoginModal() {
+  // 모달 객체 가져오기
   const modal = new bootstrap.Modal(document.getElementById('loginModal'));
+  
+  // 모달 내용 동적 생성
+  const modalBody = document.getElementById('loginModalBody');
+  modalBody.innerHTML = `
+    <form id="loginForm">
+      <div class="mb-3">
+        <label for="loginEmail" class="form-label">이메일</label>
+        <input type="email" class="form-control" id="loginEmail" required>
+      </div>
+      <div class="mb-3">
+        <label for="loginPassword" class="form-label">비밀번호</label>
+        <input type="password" class="form-control" id="loginPassword" required>
+      </div>
+      <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-primary">로그인</button>
+      </div>
+    </form>
+    <div class="alert alert-info mt-3">
+      <small>
+        <strong>테스트 계정 정보:</strong><br>
+        이메일: admin@example.com<br>
+        비밀번호: adminpass123
+      </small>
+    </div>
+  `;
+  
+  // 폼 이벤트 리스너 추가
+  document.getElementById('loginForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    handleLogin(event);
+  });
+  
+  // 모달 표시
   modal.show();
 }
 
@@ -182,108 +279,6 @@ async function handleLogout() {
     console.error('로그아웃 오류:', error);
     showAlert('danger', '로그아웃 중 오류가 발생했습니다: ' + error.message);
   }
-}
-
-// 모달 템플릿 로드 함수
-function loadModalTemplates() {
-  const modalContainer = document.getElementById('modalContainer');
-  
-  // 로그인 모달 템플릿
-  const loginModalTemplate = `
-    <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content" style="color: #000000 !important;">
-          <div class="modal-header">
-            <h5 class="modal-title" id="loginModalLabel" style="color: #000000 !important;">관리자 로그인</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body" style="color: #000000 !important;">
-            <form id="loginForm">
-              <div class="mb-3">
-                <label for="loginEmail" class="form-label" style="color: #000000 !important;">이메일</label>
-                <input type="email" class="form-control" id="loginEmail" required>
-              </div>
-              <div class="mb-3">
-                <label for="loginPassword" class="form-label" style="color: #000000 !important;">비밀번호</label>
-                <input type="password" class="form-control" id="loginPassword" required>
-              </div>
-              <div class="d-grid gap-2">
-                <button type="submit" class="btn btn-primary">로그인</button>
-              </div>
-            </form>
-            <div class="alert alert-info mt-3" style="color: #000000 !important;">
-              <small style="color: #000000 !important;">
-                <strong style="color: #000000 !important;">테스트 계정 정보:</strong><br>
-                이메일: admin@example.com<br>
-                비밀번호: adminpass123
-              </small>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-  
-  // 상세 보기 모달 템플릿
-  const viewModalTemplate = `
-    <div class="modal fade" id="viewBillModal" tabindex="-1" aria-labelledby="viewBillModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content" style="color: #000000 !important;">
-          <div class="modal-header">
-            <h5 class="modal-title" id="viewBillModalLabel" style="color: #000000 !important;">법안 상세 보기</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body" style="color: #000000 !important;">
-            <div class="bill-details">
-              <h3 id="billTitleDisplay" class="mb-3" style="color: #000000 !important;"></h3>
-              <div class="mb-3">
-                <div class="row">
-                  <div class="col-md-6">
-                    <p style="color: #000000 !important;"><strong style="color: #000000 !important;">담당자:</strong> <span id="billProposerDisplay" style="color: #000000 !important;"></span></p>
-                  </div>
-                  <div class="col-md-6">
-                    <p style="color: #000000 !important;"><strong style="color: #000000 !important;">위원회:</strong> <span id="billCommitteeDisplay" style="color: #000000 !important;"></span></p>
-                  </div>
-                </div>
-                <p style="color: #000000 !important;"><strong style="color: #000000 !important;">등록일:</strong> <span id="billDateDisplay" style="color: #000000 !important;"></span></p>
-              </div>
-              <div id="billContentDisplay" class="border rounded p-3 bg-light">
-                <iframe id="billContentFrame" style="width: 100%; height: 500px; border: none;"></iframe>
-              </div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-  
-  // 삭제 확인 모달 템플릿
-  const deleteConfirmModalTemplate = `
-    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content" style="color: #000000 !important;">
-          <div class="modal-header">
-            <h5 class="modal-title" id="deleteConfirmModalLabel" style="color: #000000 !important;">삭제 확인</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body" style="color: #000000 !important;">
-            <p style="color: #000000 !important;">정말 이 법안을 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.</p>
-            <p style="color: #000000 !important;"><strong style="color: #000000 !important;" id="deleteBillName"></strong></p>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-            <button type="button" class="btn btn-danger" id="confirmDeleteBtn">삭제</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-  
-  // 모달 템플릿을 컨테이너에 추가
-  modalContainer.innerHTML = loginModalTemplate + viewModalTemplate + deleteConfirmModalTemplate;
 }
 
 // 법안 목록 로드 함수
@@ -472,26 +467,36 @@ function setupEventListeners() {
   
   // 미리보기 버튼 이벤트
   document.getElementById('previewBtn').addEventListener('click', previewContent);
-  
-  // 삭제 확인 버튼 이벤트
-  document.addEventListener('click', function(event) {
-    if (event.target.id === 'confirmDeleteBtn') {
-      deleteBill(currentEditingBill.id);
-    }
-  });
 }
 
 // 법안 상세 보기 함수
 function viewBillDetails(bill) {
+  // 모달 객체 가져오기
   const modal = new bootstrap.Modal(document.getElementById('viewBillModal'));
   
-  // 모달 내용 채우기
-  document.getElementById('billTitleDisplay').textContent = bill.bill_name;
-  document.getElementById('billProposerDisplay').textContent = bill.writer || '-';
-  document.getElementById('billCommitteeDisplay').textContent = bill.committee || '-';
-  document.getElementById('billDateDisplay').textContent = formatDate(bill.created_at);
+  // 모달 내용 동적 생성
+  const modalBody = document.getElementById('viewBillModalBody');
+  modalBody.innerHTML = `
+    <div class="bill-details">
+      <h3 class="mb-3">${bill.bill_name}</h3>
+      <div class="mb-3">
+        <div class="row">
+          <div class="col-md-6">
+            <p><strong>담당자:</strong> ${bill.writer || '-'}</p>
+          </div>
+          <div class="col-md-6">
+            <p><strong>위원회:</strong> ${bill.committee || '-'}</p>
+          </div>
+        </div>
+        <p><strong>등록일:</strong> ${formatDate(bill.created_at)}</p>
+      </div>
+      <div class="border rounded p-3 bg-light">
+        <iframe id="billContentFrame" style="width: 100%; height: 500px; border: none;"></iframe>
+      </div>
+    </div>
+  `;
   
-  // 내용 표시 (HTML인 경우 iframe에 로드)
+  // iframe 내용 설정
   const contentFrame = document.getElementById('billContentFrame');
   if (bill.description && bill.description.trim() !== '') {
     const blob = new Blob([bill.description], { type: 'text/html' });
@@ -500,6 +505,7 @@ function viewBillDetails(bill) {
     contentFrame.srcdoc = '<div class="p-3">내용이 없습니다.</div>';
   }
   
+  // 모달 표시
   modal.show();
 }
 
@@ -639,8 +645,23 @@ function previewContent() {
 // 삭제 확인 모달 표시 함수
 function showDeleteConfirmation(bill) {
   currentEditingBill = bill;
+  
+  // 모달 객체 가져오기
   const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
-  document.getElementById('deleteBillName').textContent = bill.bill_name;
+  
+  // 모달 내용 동적 생성
+  const modalBody = document.getElementById('deleteConfirmModalBody');
+  modalBody.innerHTML = `
+    <p>정말 이 법안을 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.</p>
+    <p><strong>${bill.bill_name}</strong></p>
+  `;
+  
+  // 삭제 버튼 이벤트 리스너 추가
+  document.getElementById('confirmDeleteBtn').onclick = function() {
+    deleteBill(currentEditingBill.id);
+  };
+  
+  // 모달 표시
   modal.show();
 }
 
