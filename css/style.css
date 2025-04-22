@@ -497,12 +497,12 @@ th {
 /* 반응형 스타일 */
 @media (min-width: 576px) {
   .container {
-    padding-left: 1rem;
-    padding-right: 1rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
   }
   
   header h1 {
-    font-size: 1.5rem;
+    font-size: 1rem;
   }
   
   .modal-dialog {
