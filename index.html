@@ -52,22 +52,49 @@
 <body>
     <header class="bg-primary text-white py-3 shadow-sm">
         <div class="container">
-            <div class="d-flex justify-content-between align-items-center">
-                <h1 class="mb-0 fs-3">법률안 분석 리포트</h1>
-                <div class="d-flex align-items-center">
-                    <div class="input-group me-3">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
+                <h1 class="mb-2 mb-md-0 fs-3 text-center text-md-start">법률안 분석 리포트</h1>
+                <div class="d-flex flex-column flex-md-row align-items-center w-100 w-md-auto">
+                    <div class="input-group mb-2 mb-md-0 me-md-3 w-100" style="max-width: 500px;">
                         <input type="text" id="searchInput" class="form-control" placeholder="법안 검색...">
                         <button class="btn btn-light" type="button" id="searchBtn">
                             <i class="bi bi-search"></i>
                         </button>
                     </div>
-                    <button id="loginBtn" class="btn btn-outline-light" type="button">
+                    <button id="loginBtn" class="btn btn-outline-light w-100 w-md-auto" type="button">
                         <i class="bi bi-person-fill me-1"></i>관리자 로그인
                     </button>
                 </div>
             </div>
         </div>
     </header>
+
+    <!-- 상임위 네비게이션 바 추가 -->
+    <div class="bg-light py-2 border-bottom mb-3">
+        <div class="container">
+            <div class="nav-scroller">
+                <nav class="nav d-flex justify-content-between">
+                    <a class="nav-link active" href="#">전체</a>
+                    <a class="nav-link" href="#">국토</a>
+                    <a class="nav-link" href="#">농림</a>
+                    <a class="nav-link" href="#">문체</a>
+                    <a class="nav-link" href="#">과방</a>
+                    <a class="nav-link" href="#">복지</a>
+                    <a class="nav-link" href="#">산자</a>
+                    <a class="nav-link" href="#">환노</a>
+                    <a class="nav-link" href="#">정무</a>
+                    <a class="nav-link" href="#">기재</a>
+                    <a class="nav-link" href="#">법사</a>
+                    <a class="nav-link" href="#">행안</a>
+                    <a class="nav-link" href="#">외통</a>
+                    <a class="nav-link" href="#">국방</a>
+                    <a class="nav-link" href="#">여가</a>
+                    <a class="nav-link" href="#">교육</a>
+                    <a class="nav-link" href="#">정보</a>
+                </nav>
+            </div>
+        </div>
+    </div>
 
     <main class="container my-4">
         <div class="row">
@@ -147,7 +174,49 @@
                 </div>
                 
                 <!-- 법안 목록 표시 영역 -->
-                <div id="billList" class="bill-list"></div>
+                <div class="container mt-5" id="billList">
+                    <h2 class="mb-4">법안 분석 리스트</h2>
+                    
+                    <!-- 상임위 네비게이션 추가 -->
+                    <div class="nav-scroller py-1 mb-3 border-bottom committee-nav">
+                        <nav class="nav">
+                            <a class="nav-link active" href="#" data-committee="all">전체</a>
+                            <a class="nav-link" href="#" data-committee="법사">법사</a>
+                            <a class="nav-link" href="#" data-committee="정무">정무</a>
+                            <a class="nav-link" href="#" data-committee="기재">기재</a>
+                            <a class="nav-link" href="#" data-committee="과기">과기</a>
+                            <a class="nav-link" href="#" data-committee="교육">교육</a>
+                            <a class="nav-link" href="#" data-committee="국방">국방</a>
+                            <a class="nav-link" href="#" data-committee="행안">행안</a>
+                            <a class="nav-link" href="#" data-committee="문체">문체</a>
+                            <a class="nav-link" href="#" data-committee="농해">농해</a>
+                            <a class="nav-link" href="#" data-committee="산자">산자</a>
+                            <a class="nav-link" href="#" data-committee="복지">복지</a>
+                            <a class="nav-link" href="#" data-committee="환노">환노</a>
+                            <a class="nav-link" href="#" data-committee="국토">국토</a>
+                            <a class="nav-link" href="#" data-committee="정보">정보</a>
+                            <a class="nav-link" href="#" data-committee="여가">여가</a>
+                        </nav>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>법안 제목</th>
+                                    <th>상임위</th>
+                                    <th>제안자</th>
+                                    <th>등록일</th>
+                                    <th>상태</th>
+                                    <th>작업</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 법안 목록 표시 부분 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div>
                         <button class="btn btn-primary admin-only d-none" data-bs-toggle="collapse" data-bs-target="#formContainer">

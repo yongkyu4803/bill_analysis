@@ -45,10 +45,11 @@ body {
 
 /* 헤더 스타일 */
 header {
-  padding: 0.5rem 0;
+  padding: 0.75rem 0;
   position: sticky;
   top: 0;
   z-index: 1020;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 header h1 {
@@ -61,7 +62,8 @@ header h1 {
 
 /* 모바일에서 검색 필드 스타일 */
 header .input-group {
-  width: 60%;
+  width: 100%;
+  max-width: 100%;
 }
 
 header .input-group .form-control {
@@ -557,4 +559,138 @@ th {
   .modal-dialog {
     max-width: 900px;
   }
+}
+
+/* 모바일 헤더 스타일 */
+@media (max-width: 767.98px) {
+  header .btn {
+    margin-top: 0.5rem;
+    width: 100%;
+  }
+  
+  header h1 {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  
+  header .input-group {
+    margin-bottom: 0.5rem;
+  }
+  
+  th, td {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.8rem;
+  }
+  
+  .table th:first-child, .table td:first-child {
+    width: 30px;
+  }
+  
+  .table th:nth-child(3), .table td:nth-child(3) {
+    width: 60px;
+  }
+  
+  .table th:nth-child(4), .table td:nth-child(4) {
+    width: 70px;
+  }
+  
+  .badge.rounded-pill {
+    font-size: 0.7rem;
+    padding: 0.25em 0.5em;
+  }
+  
+  .bill-title {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+  }
+}
+
+/* 네비게이션 스크롤러 */
+.nav-scroller {
+  position: relative;
+  z-index: 2;
+  height: 2.75rem;
+  overflow-y: hidden;
+}
+
+.nav-scroller .nav {
+  display: flex;
+  flex-wrap: nowrap;
+  padding-bottom: 1rem;
+  margin-top: -1px;
+  overflow-x: auto;
+  text-align: center;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+}
+
+.nav-scroller .nav::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
+}
+
+.nav-scroller .nav-link {
+  padding-top: .75rem;
+  padding-bottom: .75rem;
+  font-size: 0.85rem;
+  color: #6c757d;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+}
+
+.nav-scroller .nav-link:hover,
+.nav-scroller .nav-link:focus {
+  color: #0d6efd;
+  border-bottom-color: #0d6efd;
+}
+
+.nav-scroller .nav-link.active {
+  color: #0d6efd;
+  font-weight: 500;
+  border-bottom-color: #0d6efd;
+}
+
+@media (max-width: 767.98px) {
+  .nav-scroller {
+    height: 2.5rem;
+  }
+  
+  .nav-scroller .nav-link {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* 상임위 네비게이션 스타일 */
+.committee-nav {
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+}
+
+.committee-nav .nav {
+  display: flex;
+  padding-left: 0;
+  margin-bottom: 0;
+  list-style: none;
+  flex-wrap: nowrap;
+}
+
+.committee-nav .nav-link {
+  padding: .5rem 1rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.committee-nav .nav-link:hover {
+  color: #007bff;
+}
+
+.committee-nav .nav-link.active {
+  color: #007bff;
+  border-bottom: 2px solid #007bff;
 } 
