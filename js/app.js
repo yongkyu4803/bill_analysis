@@ -59,6 +59,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         return;
     }
     
+    // 폼 탭 상태 초기화
+    initTabState();
+    
     // 세션 상태 확인
     checkSession();
     
@@ -69,12 +72,44 @@ document.addEventListener('DOMContentLoaded', async function() {
     setupEventListeners();
 });
 
+// 폼 탭 상태 초기화
+function initTabState() {
+    // 활성화된 탭 확인
+    const activeTab = document.querySelector('.nav-link.active');
+    const htmlContent = document.getElementById('billContent');
+    const markdownContent = document.getElementById('billMarkdownContent');
+    
+    if (!htmlContent || !markdownContent) return;
+    
+    // 기본으로 HTML 탭이 활성화되어 있을 경우, markdown의 required를 제거
+    if (!activeTab || activeTab.id === 'html-tab') {
+        markdownContent.removeAttribute('required');
+        htmlContent.setAttribute('required', 'required');
+    } 
+    // 마크다운 탭이 활성화되어 있을 경우, HTML의 required를 제거
+    else if (activeTab.id === 'markdown-tab') {
+        htmlContent.removeAttribute('required');
+        markdownContent.setAttribute('required', 'required');
+    }
+}
+
 // 이벤트 리스너 설정
 function setupEventListeners() {
     // 법안 등록 폼 제출
     const billForm = document.getElementById('billForm');
     if (billForm) {
         billForm.addEventListener('submit', handleFormSubmit);
+    }
+    
+    // 폼 제출 버튼
+    const submitFormBtn = document.getElementById('submitFormBtn');
+    if (submitFormBtn) {
+        submitFormBtn.addEventListener('click', function() {
+            const form = document.getElementById('billForm');
+            if (form) {
+                handleFormSubmit({ preventDefault: () => {}, target: form });
+            }
+        });
     }
     
     // 검색 기능
@@ -118,24 +153,32 @@ function setupTabEvents() {
     
     // HTML -> 마크다운 변환 (탭 전환 시)
     markdownTab.addEventListener('shown.bs.tab', function(e) {
-        const htmlContent = document.getElementById('billContent').value;
+        const htmlContent = document.getElementById('billContent');
         const markdownContent = document.getElementById('billMarkdownContent');
         
         // HTML 내용이 있고 마크다운 내용이 없을 때만 변환
-        if (htmlContent && !markdownContent.value) {
-            markdownContent.value = convertHtmlToMarkdown(htmlContent);
+        if (htmlContent.value && !markdownContent.value) {
+            markdownContent.value = convertHtmlToMarkdown(htmlContent.value);
         }
+        
+        // required 속성 토글
+        htmlContent.removeAttribute('required');
+        markdownContent.setAttribute('required', 'required');
     });
     
     // 마크다운 -> HTML 변환 (탭 전환 시)
     htmlTab.addEventListener('shown.bs.tab', function(e) {
-        const markdownContent = document.getElementById('billMarkdownContent').value;
+        const markdownContent = document.getElementById('billMarkdownContent');
         const htmlContent = document.getElementById('billContent');
         
         // 마크다운 내용이 있고 HTML 내용이 없을 때만 변환
-        if (markdownContent && !htmlContent.value) {
-            htmlContent.value = convertMarkdownToHtml(markdownContent);
+        if (markdownContent.value && !htmlContent.value) {
+            htmlContent.value = convertMarkdownToHtml(markdownContent.value);
         }
+        
+        // required 속성 토글
+        markdownContent.removeAttribute('required');
+        htmlContent.setAttribute('required', 'required');
     });
     
     // 미리보기 버튼 이벤트
@@ -557,6 +600,12 @@ async function editBill(billId) {
             submitBtn.textContent = '수정';
         }
         
+        // 새 제출 버튼 텍스트 변경
+        const newSubmitBtn = document.getElementById('submitFormBtn');
+        if (newSubmitBtn) {
+            newSubmitBtn.textContent = '수정';
+        }
+        
         // 폼 컨테이너 표시
         const formContainer = document.getElementById('formContainer');
         if (formContainer) {
@@ -601,7 +650,7 @@ async function handleFormSubmit(event) {
     const form = event.target;
     
     // 폼 요소가 존재하는지 확인
-    if (!form.elements['billTitle'] || !form.elements['billProposer'] || !form.elements['billContent']) {
+    if (!form.elements['billTitle'] || !form.elements['billProposer']) {
         console.error('필수 폼 필드가 누락되었습니다');
         showAlert('폼 필드가 올바르게 정의되지 않았습니다.', 'danger');
         return;
@@ -616,10 +665,32 @@ async function handleFormSubmit(event) {
     if (activeTab && activeTab.id === 'markdown-tab') {
         // 마크다운 내용을 HTML로 변환
         const markdownContent = form.elements['billMarkdownContent'].value;
+        if (!markdownContent) {
+            showAlert('법안 내용을 입력해주세요.', 'warning');
+            return;
+        }
         content = convertMarkdownToHtml(markdownContent);
     } else {
         // 기본 HTML 내용
-        content = form.elements['billContent'].value;
+        const htmlContent = form.elements['billContent'].value;
+        if (!htmlContent) {
+            showAlert('법안 내용을 입력해주세요.', 'warning');
+            return;
+        }
+        content = htmlContent;
+    }
+    
+    // 제목과 제안자 유효성 검사
+    if (!form.elements['billTitle'].value) {
+        showAlert('법안 제목을 입력해주세요.', 'warning');
+        form.elements['billTitle'].focus();
+        return;
+    }
+    
+    if (!form.elements['billProposer'].value) {
+        showAlert('제안자를 입력해주세요.', 'warning');
+        form.elements['billProposer'].focus();
+        return;
     }
     
     const billData = {
@@ -679,6 +750,12 @@ async function handleFormSubmit(event) {
         const submitBtn = form.querySelector('button[type="submit"]');
         if (submitBtn) {
             submitBtn.textContent = '등록';
+        }
+        
+        // 새 제출 버튼 텍스트 원상복구
+        const newSubmitBtn = document.getElementById('submitFormBtn');
+        if (newSubmitBtn) {
+            newSubmitBtn.textContent = '등록';
         }
         
         // 폼 접기
