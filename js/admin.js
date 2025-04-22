@@ -490,12 +490,37 @@ function viewBillDetails(bill) {
         </div>
         <p><strong>등록일:</strong> ${formatDate(bill.created_at)}</p>
       </div>
-      <div id="billContentDisplay" class="border rounded p-3 bg-light overflow-auto" style="max-height: 500px;">
-        <div class="text-center p-3">
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">로딩 중...</span>
+    </div>
+    
+    <!-- 탭 인터페이스 -->
+    <ul class="nav nav-tabs mb-3" id="contentTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="html-tab" data-bs-toggle="tab" data-bs-target="#html-view" type="button" role="tab">HTML 보기</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="text-tab" data-bs-toggle="tab" data-bs-target="#text-view" type="button" role="tab">텍스트 보기</button>
+      </li>
+    </ul>
+    
+    <div class="tab-content">
+      <div class="tab-pane fade show active" id="html-view" role="tabpanel">
+        <div id="billContentDisplay" class="border rounded p-3 bg-light overflow-auto" style="max-height: 500px;">
+          <div class="text-center p-3">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">로딩 중...</span>
+            </div>
+            <p class="mt-2">내용을 불러오는 중...</p>
           </div>
-          <p class="mt-2">내용을 불러오는 중...</p>
+        </div>
+      </div>
+      <div class="tab-pane fade" id="text-view" role="tabpanel">
+        <div id="billTextDisplay" class="border rounded p-3 bg-light overflow-auto" style="max-height: 500px; white-space: pre-wrap;">
+          <div class="text-center p-3">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">로딩 중...</span>
+            </div>
+            <p class="mt-2">내용을 불러오는 중...</p>
+          </div>
         </div>
       </div>
     </div>
@@ -506,14 +531,49 @@ function viewBillDetails(bill) {
   
   // 내용 표시 - 별도 처리하여 모달이 먼저 표시되도록 함
   setTimeout(() => {
+    // HTML 내용 표시
     const contentDisplay = document.getElementById('billContentDisplay');
     if (bill.description && bill.description.trim() !== '') {
-      // 내용을 안전하게 표시
-      contentDisplay.innerHTML = bill.description;
+      // 안전하게 처리된 HTML로 표시
+      try {
+        contentDisplay.innerHTML = sanitizeHtml(bill.description);
+      } catch (e) {
+        console.error('HTML 렌더링 오류:', e);
+        contentDisplay.innerHTML = '<div class="alert alert-warning">HTML 내용을 표시하는 중 오류가 발생했습니다.</div>';
+      }
     } else {
       contentDisplay.innerHTML = '<div class="p-3">내용이 없습니다.</div>';
     }
+    
+    // 순수 텍스트 버전 표시
+    const textDisplay = document.getElementById('billTextDisplay');
+    if (bill.description && bill.description.trim() !== '') {
+      try {
+        // HTML에서 텍스트만 추출
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(bill.description, 'text/html');
+        textDisplay.textContent = doc.body.textContent || '텍스트 내용을 추출할 수 없습니다.';
+      } catch (e) {
+        console.error('텍스트 변환 오류:', e);
+        textDisplay.textContent = '텍스트 내용을 표시하는 중 오류가 발생했습니다.';
+      }
+    } else {
+      textDisplay.textContent = '내용이 없습니다.';
+    }
   }, 300);
+}
+
+// HTML 안전하게 처리하는 함수
+function sanitizeHtml(html) {
+  // 기본적인 살균 처리 (실제 프로덕션에서는 더 견고한 라이브러리 사용 권장)
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')  // 스크립트 태그 제거
+    .replace(/javascript\s*:/gi, '')  // 자바스크립트 프로토콜 제거
+    .replace(/on\w+\s*=/gi, '')  // 온로드 등 이벤트 핸들러 제거
+    .replace(/style\s*=\s*"[^"]*"/gi, function(match) {
+      // 스타일 속성에서 위험한 것 제거
+      return match.replace(/expression|url\s*\(/gi, '');
+    });
 }
 
 // 수정 폼 열기 함수
