@@ -14,6 +14,8 @@
     <link href="css/style.css" rel="stylesheet">
     <!-- Supabase 클라이언트 라이브러리 - 최신 버전 사용 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.5/dist/umd/supabase.min.js"></script>
+    
+    <!-- 안드로이드 모바일 기기 모달 텍스트 렌더링 문제 해결을 위한 CSS -->
     <style>
         /* 모바일 최적화를 위한 여백 조정 */
         @media (max-width: 768px) {
@@ -44,6 +46,37 @@
             .table-responsive {
                 margin-bottom: 0;
             }
+        }
+        
+        /* 모달 텍스트 렌더링 문제 해결 */
+        .modal, .modal-backdrop {
+            -webkit-transform: translateZ(0);
+            -moz-transform: translateZ(0);
+            -ms-transform: translateZ(0);
+            -o-transform: translateZ(0);
+            transform: translateZ(0);
+        }
+        
+        /* 모달 내 텍스트 가시성 확보 */
+        .modal-content, .modal-header, .modal-body, .modal-footer,
+        .modal h1, .modal h2, .modal h3, .modal h4, .modal h5, .modal p, 
+        .modal label, .modal span, .modal strong, .modal small,
+        .modal .alert, .modal .form-control, .modal .btn {
+            color: #000000 !important;
+            opacity: 1 !important;
+            text-rendering: geometricPrecision;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        /* 배경색 확보 */
+        .modal-content {
+            background-color: #ffffff !important;
+        }
+        
+        .modal-body .alert-info {
+            background-color: #d1ecf1 !important;
+            border-color: #bee5eb !important;
         }
         
         /* 상임위 배지 스타일 */

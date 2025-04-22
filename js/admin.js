@@ -192,28 +192,28 @@ function loadModalTemplates() {
   const loginModalTemplate = `
     <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
       <div class="modal-dialog">
-        <div class="modal-content">
+        <div class="modal-content" style="color: #000000 !important;">
           <div class="modal-header">
-            <h5 class="modal-title" id="loginModalLabel">관리자 로그인</h5>
+            <h5 class="modal-title" id="loginModalLabel" style="color: #000000 !important;">관리자 로그인</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <div class="modal-body">
+          <div class="modal-body" style="color: #000000 !important;">
             <form id="loginForm">
               <div class="mb-3">
-                <label for="loginEmail" class="form-label">이메일</label>
+                <label for="loginEmail" class="form-label" style="color: #000000 !important;">이메일</label>
                 <input type="email" class="form-control" id="loginEmail" required>
               </div>
               <div class="mb-3">
-                <label for="loginPassword" class="form-label">비밀번호</label>
+                <label for="loginPassword" class="form-label" style="color: #000000 !important;">비밀번호</label>
                 <input type="password" class="form-control" id="loginPassword" required>
               </div>
               <div class="d-grid gap-2">
                 <button type="submit" class="btn btn-primary">로그인</button>
               </div>
             </form>
-            <div class="alert alert-info mt-3">
-              <small>
-                <strong>테스트 계정 정보:</strong><br>
+            <div class="alert alert-info mt-3" style="color: #000000 !important;">
+              <small style="color: #000000 !important;">
+                <strong style="color: #000000 !important;">테스트 계정 정보:</strong><br>
                 이메일: admin@example.com<br>
                 비밀번호: adminpass123
               </small>
@@ -228,24 +228,24 @@ function loadModalTemplates() {
   const viewModalTemplate = `
     <div class="modal fade" id="viewBillModal" tabindex="-1" aria-labelledby="viewBillModalLabel" aria-hidden="true">
       <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content">
+        <div class="modal-content" style="color: #000000 !important;">
           <div class="modal-header">
-            <h5 class="modal-title" id="viewBillModalLabel">법안 상세 보기</h5>
+            <h5 class="modal-title" id="viewBillModalLabel" style="color: #000000 !important;">법안 상세 보기</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <div class="modal-body">
+          <div class="modal-body" style="color: #000000 !important;">
             <div class="bill-details">
-              <h3 id="billTitleDisplay" class="mb-3"></h3>
+              <h3 id="billTitleDisplay" class="mb-3" style="color: #000000 !important;"></h3>
               <div class="mb-3">
                 <div class="row">
                   <div class="col-md-6">
-                    <p><strong>담당자:</strong> <span id="billProposerDisplay"></span></p>
+                    <p style="color: #000000 !important;"><strong style="color: #000000 !important;">담당자:</strong> <span id="billProposerDisplay" style="color: #000000 !important;"></span></p>
                   </div>
                   <div class="col-md-6">
-                    <p><strong>위원회:</strong> <span id="billCommitteeDisplay"></span></p>
+                    <p style="color: #000000 !important;"><strong style="color: #000000 !important;">위원회:</strong> <span id="billCommitteeDisplay" style="color: #000000 !important;"></span></p>
                   </div>
                 </div>
-                <p><strong>등록일:</strong> <span id="billDateDisplay"></span></p>
+                <p style="color: #000000 !important;"><strong style="color: #000000 !important;">등록일:</strong> <span id="billDateDisplay" style="color: #000000 !important;"></span></p>
               </div>
               <div id="billContentDisplay" class="border rounded p-3 bg-light">
                 <iframe id="billContentFrame" style="width: 100%; height: 500px; border: none;"></iframe>
@@ -264,14 +264,14 @@ function loadModalTemplates() {
   const deleteConfirmModalTemplate = `
     <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
       <div class="modal-dialog">
-        <div class="modal-content">
+        <div class="modal-content" style="color: #000000 !important;">
           <div class="modal-header">
-            <h5 class="modal-title" id="deleteConfirmModalLabel">삭제 확인</h5>
+            <h5 class="modal-title" id="deleteConfirmModalLabel" style="color: #000000 !important;">삭제 확인</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <div class="modal-body">
-            <p>정말 이 법안을 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.</p>
-            <p><strong id="deleteBillName"></strong></p>
+          <div class="modal-body" style="color: #000000 !important;">
+            <p style="color: #000000 !important;">정말 이 법안을 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.</p>
+            <p style="color: #000000 !important;"><strong style="color: #000000 !important;" id="deleteBillName"></strong></p>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
