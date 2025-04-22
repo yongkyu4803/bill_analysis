@@ -316,7 +316,12 @@ function renderBillList(bills) {
     `;
     
     bills.forEach(bill => {
-        const date = new Date(bill.created_at).toLocaleDateString();
+        // 날짜 형식을 YYYY-MM-DD로 변경
+        const createdDate = new Date(bill.created_at);
+        const year = createdDate.getFullYear();
+        const month = String(createdDate.getMonth() + 1).padStart(2, '0'); // 월은 0부터 시작하므로 +1, 두 자리 숫자로 패딩
+        const day = String(createdDate.getDate()).padStart(2, '0'); // 두 자리 숫자로 패딩
+        const formattedDate = `${year}-${month}-${day}`;
         
         // 상임위 배지 스타일 적용
         const committee = bill.committee || '';
@@ -328,7 +333,7 @@ function renderBillList(bills) {
                 <td>${committeeBadge}</td>
                 <td class="bill-title cursor-pointer" data-id="${bill.id}">${bill.bill_name}</td>
                 <td>${bill.writer}</td>
-                <td>${date}</td>
+                <td>${formattedDate}</td>
             </tr>
         `;
     });
@@ -453,8 +458,14 @@ async function viewBillDetails(billId) {
         document.getElementById('billDetailTitle').textContent = bill.bill_name;
         document.getElementById('billDetailProposer').textContent = bill.writer;
         
-        const date = new Date(bill.created_at).toLocaleDateString();
-        document.getElementById('billDetailDate').textContent = date;
+        // 날짜 형식을 YYYY-MM-DD로 변경
+        const createdDate = new Date(bill.created_at);
+        const year = createdDate.getFullYear();
+        const month = String(createdDate.getMonth() + 1).padStart(2, '0');
+        const day = String(createdDate.getDate()).padStart(2, '0');
+        const formattedDate = `${year}-${month}-${day}`;
+        
+        document.getElementById('billDetailDate').textContent = formattedDate;
         
         // 상임위 설정 (있는 경우에만)
         const committeeElement = document.getElementById('billDetailCommittee');
