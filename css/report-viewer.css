@@ -1,0 +1,282 @@
+/* 리포트 뷰어 전용 스타일 */
+
+/* 리포트 컨테이너 스타일 */
+.report-container {
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    overflow: hidden;
+}
+
+/* 리포트 헤더 스타일 */
+.report-header {
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.report-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #343a40;
+    margin-bottom: 1rem;
+}
+
+.report-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.report-meta-item {
+    display: flex;
+    align-items: center;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.report-meta-item i {
+    margin-right: 0.5rem;
+    color: #0d6efd;
+}
+
+/* 리포트 콘텐츠 스타일 */
+.report-content {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: #343a40;
+}
+
+.report-content h1,
+.report-content h2,
+.report-content h3,
+.report-content h4,
+.report-content h5,
+.report-content h6 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    color: #000;
+}
+
+.report-content h1 {
+    font-size: 1.8rem;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 0.5rem;
+}
+
+.report-content h2 {
+    font-size: 1.6rem;
+}
+
+.report-content h3 {
+    font-size: 1.4rem;
+}
+
+.report-content p {
+    margin-bottom: 1.5rem;
+}
+
+.report-content ul,
+.report-content ol {
+    margin-bottom: 1.5rem;
+    padding-left: 2rem;
+}
+
+.report-content li {
+    margin-bottom: 0.5rem;
+}
+
+.report-content img {
+    max-width: 100%;
+    height: auto;
+    margin: 1.5rem 0;
+    border-radius: 4px;
+}
+
+.report-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+}
+
+.report-content table th,
+.report-content table td {
+    padding: 0.75rem;
+    border: 1px solid #dee2e6;
+}
+
+.report-content table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.report-content blockquote {
+    border-left: 4px solid #0d6efd;
+    padding: 0.5rem 1rem;
+    margin: 1.5rem 0;
+    background-color: #f8f9fa;
+    color: #495057;
+    font-style: italic;
+}
+
+/* 액션 버튼 스타일 */
+.report-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+}
+
+.report-actions .btn {
+    padding: 0.5rem 1rem;
+    display: inline-flex;
+    align-items: center;
+    font-weight: 500;
+}
+
+.report-actions .btn i {
+    margin-right: 0.5rem;
+}
+
+/* 인쇄 스타일 */
+@media print {
+    @page {
+        margin: 1cm;
+    }
+    
+    body {
+        font-size: 12pt;
+        background: #fff;
+        color: #000;
+    }
+    
+    .report-container {
+        box-shadow: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    header,
+    .report-actions,
+    .no-print {
+        display: none !important;
+    }
+    
+    .report-header {
+        margin-bottom: 20pt;
+    }
+    
+    .report-content {
+        font-size: 11pt;
+        line-height: 1.6;
+    }
+    
+    .report-content h1,
+    .report-content h2,
+    .report-content h3 {
+        page-break-after: avoid;
+    }
+    
+    .report-content p,
+    .report-content ul,
+    .report-content ol,
+    .report-content table {
+        page-break-inside: avoid;
+    }
+    
+    .report-content a {
+        color: #000;
+        text-decoration: none;
+    }
+}
+
+/* 모바일 최적화 */
+@media (max-width: 767.98px) {
+    .report-container {
+        padding: 1rem;
+    }
+    
+    .report-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .report-meta {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .report-content {
+        font-size: 0.95rem;
+    }
+    
+    .report-content h1 {
+        font-size: 1.5rem;
+    }
+    
+    .report-content h2 {
+        font-size: 1.3rem;
+    }
+    
+    .report-content h3 {
+        font-size: 1.1rem;
+    }
+}
+
+/* 다크 모드 지원 */
+@media (prefers-color-scheme: dark) {
+    body.support-dark-mode {
+        background-color: #212529;
+        color: #f8f9fa;
+    }
+    
+    body.support-dark-mode .report-container {
+        background-color: #343a40;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.3);
+    }
+    
+    body.support-dark-mode .report-header {
+        border-bottom-color: #495057;
+    }
+    
+    body.support-dark-mode .report-header h1 {
+        color: #f8f9fa;
+    }
+    
+    body.support-dark-mode .report-meta-item {
+        color: #adb5bd;
+    }
+    
+    body.support-dark-mode .report-content {
+        color: #e9ecef;
+    }
+    
+    body.support-dark-mode .report-content h1,
+    body.support-dark-mode .report-content h2,
+    body.support-dark-mode .report-content h3,
+    body.support-dark-mode .report-content h4,
+    body.support-dark-mode .report-content h5,
+    body.support-dark-mode .report-content h6 {
+        color: #f8f9fa;
+    }
+    
+    body.support-dark-mode .report-content h1 {
+        border-bottom-color: #495057;
+    }
+    
+    body.support-dark-mode .report-content table th,
+    body.support-dark-mode .report-content table td {
+        border-color: #495057;
+    }
+    
+    body.support-dark-mode .report-content table th {
+        background-color: #495057;
+    }
+    
+    body.support-dark-mode .report-content blockquote {
+        background-color: #343a40;
+        color: #e9ecef;
+    }
+} 

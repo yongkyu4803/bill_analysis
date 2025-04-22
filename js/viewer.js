@@ -192,7 +192,7 @@ function renderBillList(billsData) {
     nameCell.style.paddingBottom = '0.4rem';
     nameCell.innerHTML = `
       <div class="d-flex justify-content-between align-items-start">
-        <span class="bill-title fw-bold text-primary fs-6">${bill.bill_name}</span>
+        <a href="report-viewer.html?id=${bill.id}" class="bill-title fw-bold text-primary fs-6 text-decoration-none">${bill.bill_name}</a>
         <small class="text-muted ms-2 d-md-none">${formatDate(bill.created_at, true)}</small>
       </div>
       <div class="d-block d-md-none small mt-1">
@@ -241,7 +241,7 @@ function renderRecentBills(recentBills) {
     const listItem = document.createElement('li');
     listItem.className = 'list-group-item border-0 border-bottom py-2';
     listItem.innerHTML = `
-      <a href="#" class="text-decoration-none recent-bill-link" data-bill-id="${bill.id}">
+      <a href="report-viewer.html?id=${bill.id}" class="text-decoration-none recent-bill-link">
         <div class="d-flex justify-content-between align-items-start">
           <div>
             <span class="d-block text-truncate fw-medium text-dark fs-6" style="max-width: 230px;">${bill.bill_name}</span>
@@ -308,25 +308,6 @@ function updateStatistics() {
 
 // 이벤트 리스너 설정 함수
 function setupEventListeners() {
-  // 법안 제목 클릭 이벤트
-  document.addEventListener('click', function(event) {
-    if (event.target.closest('.bill-title')) {
-      const row = event.target.closest('tr');
-      const index = Array.from(row.parentNode.children).indexOf(row);
-      viewBillDetails(bills[index]);
-    }
-    
-    // 최근 법안 클릭 이벤트
-    if (event.target.closest('.recent-bill-link')) {
-      event.preventDefault();
-      const billId = event.target.closest('.recent-bill-link').dataset.billId;
-      const bill = bills.find(b => b.id == billId);
-      if (bill) {
-        viewBillDetails(bill);
-      }
-    }
-  });
-  
   // 검색 버튼 클릭 이벤트
   document.getElementById('searchBtn').addEventListener('click', function() {
     const searchInput = document.getElementById('searchInput');

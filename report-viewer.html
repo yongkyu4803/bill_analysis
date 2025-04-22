@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="법안 리포트 뷰어 페이지">
+    <meta name="author" content="yongkyu4803">
+    <title>법률안 분석 보고서</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- 커스텀 CSS -->
+    <link href="css/style.css" rel="stylesheet">
+    <!-- 리포트 뷰어 CSS -->
+    <link href="css/report-viewer.css" rel="stylesheet">
+    <!-- Supabase 클라이언트 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.5/dist/umd/supabase.min.js"></script>
+    
+    <style>
+        /* 리포트 뷰어 스타일 */
+        #reportContentContainer {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            min-height: 600px;
+            margin-bottom: 2rem;
+        }
+        
+        .report-header {
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .report-content {
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+        }
+        
+        .report-content img {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .bill-meta {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        /* 인쇄용 스타일 */
+        @media print {
+            header, .no-print {
+                display: none !important;
+            }
+            
+            body, #reportContentContainer {
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                box-shadow: none;
+            }
+        }
+        
+        /* HTML 콘텐츠 표시 개선 */
+        #reportContent {
+            color: #000 !important;
+            background-color: #fff !important;
+            word-break: break-word;
+            line-height: 1.6;
+        }
+        
+        #reportContent * {
+            max-width: 100% !important;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- 헤더 영역 -->
+    <header class="bg-dark text-white py-3 shadow-sm">
+        <div class="container">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
+                <h1 class="mb-2 mb-md-0 fs-3 text-center text-md-start">법률안 리포트</h1>
+                <div class="d-flex align-items-center">
+                    <a href="index.html" class="btn btn-outline-light btn-sm me-2">
+                        <i class="bi bi-house-fill me-1"></i>
+                    </a>
+                    <button id="printBtn" class="btn btn-outline-light btn-sm">
+                        <i class="bi bi-printer-fill me-1"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 메인 컨텐츠 영역 -->
+    <main class="container my-4">
+        <div class="row">
+            <!-- 로딩 표시 -->
+            <div id="loadingIndicator" class="col-12 text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">로딩 중...</span>
+                </div>
+                <p class="mt-3">리포트를 불러오는 중입니다...</p>
+            </div>
+            
+            <!-- 보고서 내용 컨테이너 -->
+            <div id="reportContentContainer" class="col-12 report-container d-none">
+                <div class="report-header">
+                    <h2 id="reportTitle" class="mb-3 fs-3"></h2>
+                    <div class="report-meta">
+                        <div class="report-meta-item">
+                            <i class="bi bi-person"></i> 발의자: <span id="reportWriter"></span>
+                        </div>
+                        <div class="report-meta-item">
+                            <i class="bi bi-folder"></i> 위원회: <span id="reportCommittee"></span>
+                        </div>
+                        <div class="report-meta-item">
+                            <i class="bi bi-calendar3"></i> 등록일: <span id="reportDate"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="reportContent" class="report-content">
+                    <!-- 보고서 내용이 여기에 로드됩니다 -->
+                </div>
+            </div>
+            
+            <!-- 오류 메시지 -->
+            <div id="errorMessage" class="col-12 alert alert-danger d-none" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <span id="errorText">리포트를 불러오는 중 오류가 발생했습니다.</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- 알림 컨테이너 -->
+    <div id="alertContainer"></div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- 리포트 뷰어 JS -->
+    <script>
+        // Supabase 클라이언트 초기화
+        const supabaseUrl = 'https://rxwztfdnragffxbmlscf.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4d3p0ZmRucmFnZmZ4Ym1sc2NmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI0NzU2MDgsImV4cCI6MjA1ODA1MTYwOH0.KN8cR6_xHHHfuF1odUi9WwzkbOHCmwuRaK0FYe7b0Ig';
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+        
+        // 페이지 로드 시 실행
+        document.addEventListener('DOMContentLoaded', async function() {
+            // URL에서 bill ID 파라미터 가져오기
+            const urlParams = new URLSearchParams(window.location.search);
+            const billId = urlParams.get('id');
+            
+            // bill ID가 없는 경우
+            if (!billId) {
+                showError('리포트 ID가 지정되지 않았습니다.');
+                return;
+            }
+            
+            // 리포트 데이터 로드
+            await loadReportData(billId);
+            
+            // 인쇄 버튼 이벤트 리스너
+            document.getElementById('printBtn').addEventListener('click', function() {
+                window.print();
+            });
+        });
+        
+        // 리포트 데이터 로드 함수
+        async function loadReportData(billId) {
+            try {
+                // 법안 데이터 가져오기
+                const { data: bill, error } = await supabaseClient
+                    .from('bill')
+                    .select('*')
+                    .eq('id', billId)
+                    .single();
+                
+                if (error) throw error;
+                
+                if (!bill) {
+                    showError('요청하신 리포트를 찾을 수 없습니다.');
+                    return;
+                }
+                
+                // 로딩 인디케이터 숨기기
+                document.getElementById('loadingIndicator').classList.add('d-none');
+                
+                // 리포트 컨테이너 표시
+                const reportContainer = document.getElementById('reportContentContainer');
+                reportContainer.classList.remove('d-none');
+                
+                // 기본 정보 채우기
+                document.getElementById('reportTitle').textContent = bill.bill_name;
+                document.getElementById('reportWriter').textContent = bill.writer || '-';
+                document.getElementById('reportCommittee').textContent = bill.committee || '-';
+                document.getElementById('reportDate').textContent = formatDate(bill.created_at);
+                
+                // 페이지 제목 업데이트
+                document.title = `${bill.bill_name} - 법률안 리포트 뷰어`;
+                
+                // 리포트 내용 표시
+                const reportContent = document.getElementById('reportContent');
+                
+                if (bill.description && bill.description.trim() !== '') {
+                    // HTML 내용 안전하게 표시
+                    reportContent.innerHTML = sanitizeHtml(bill.description);
+                } else {
+                    reportContent.innerHTML = '<div class="alert alert-warning">리포트 내용이 없습니다.</div>';
+                }
+                
+            } catch (error) {
+                console.error('리포트 로드 오류:', error);
+                showError('리포트를 불러오는 중 오류가 발생했습니다: ' + error.message);
+            }
+        }
+        
+        // HTML 안전하게 처리하는 함수
+        function sanitizeHtml(html) {
+            // 기본적인 살균 처리 (실제 프로덕션에서는 더 견고한 라이브러리 사용 권장)
+            return html
+                .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')  // 스크립트 태그 제거
+                .replace(/javascript\s*:/gi, '')  // 자바스크립트 프로토콜 제거
+                .replace(/on\w+\s*=/gi, '')  // 온로드 등 이벤트 핸들러 제거
+                .replace(/style\s*=\s*"[^"]*"/gi, function(match) {
+                    // 스타일 속성에서 위험한 것 제거
+                    return match.replace(/expression|url\s*\(/gi, '');
+                });
+        }
+        
+        // 날짜 포맷 함수
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            
+            const date = new Date(dateString);
+            
+            if (isNaN(date.getTime())) {
+                return dateString;
+            }
+            
+            // 항상 날짜만 표시 (시간 제거)
+            return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+        }
+        
+        // 오류 메시지 표시 함수
+        function showError(message) {
+            // 로딩 인디케이터 숨기기
+            document.getElementById('loadingIndicator').classList.add('d-none');
+            
+            // 오류 메시지 표시
+            const errorElement = document.getElementById('errorMessage');
+            document.getElementById('errorText').textContent = message;
+            errorElement.classList.remove('d-none');
+        }
+        
+        // 알림 표시 함수
+        function showAlert(type, message, duration = 5000) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertId = 'alert-' + Date.now();
+            
+            const alertElement = document.createElement('div');
+            alertElement.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
+            alertElement.style.zIndex = 1050;
+            alertElement.id = alertId;
+            alertElement.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            
+            alertContainer.appendChild(alertElement);
+            
+            // 일정 시간 후 알림 자동 제거
+            setTimeout(() => {
+                const alert = document.getElementById(alertId);
+                if (alert) {
+                    alert.classList.remove('show');
+                    setTimeout(() => alert.remove(), 150);
+                }
+            }, duration);
+        }
+    </script>
+</body>
+</html> 
