@@ -189,7 +189,7 @@ function renderBillList(billsData) {
     // 법안명 셀
     const nameCell = document.createElement('td');
     nameCell.innerHTML = `
-      <span class="bill-title fw-medium text-primary">${bill.bill_name}</span>
+      <span class="bill-title fw-bold text-primary fs-6">${bill.bill_name}</span>
       <div class="d-block d-md-none small text-muted mt-1">
         <span class="badge bg-secondary rounded-pill me-2">${bill.committee || '-'}</span>
         <span>${bill.writer || '-'}</span>
@@ -198,12 +198,12 @@ function renderBillList(billsData) {
     
     // 담당자 셀
     const proposerCell = document.createElement('td');
-    proposerCell.className = 'd-none d-md-table-cell';
+    proposerCell.className = 'd-none d-md-table-cell text-muted';
     proposerCell.textContent = bill.writer || '-';
     
     // 날짜 셀
     const dateCell = document.createElement('td');
-    dateCell.className = 'd-none d-md-table-cell';
+    dateCell.className = 'd-none d-md-table-cell text-muted';
     dateCell.style.paddingRight = '16px';
     dateCell.textContent = formatDate(bill.created_at, true); // 날짜만 표시
     
@@ -224,7 +224,7 @@ function renderRecentBills(recentBills) {
   if (recentBills.length === 0) {
     recentBillsList.innerHTML = `
       <li class="list-group-item">
-        <p class="text-center py-2 mb-0">최근 등록된 법안이 없습니다.</p>
+        <p class="text-center py-1 mb-0 small">최근 등록된 법안이 없습니다.</p>
       </li>
     `;
     return;
@@ -232,18 +232,18 @@ function renderRecentBills(recentBills) {
   
   recentBills.forEach(bill => {
     const listItem = document.createElement('li');
-    listItem.className = 'list-group-item border-0 border-bottom';
+    listItem.className = 'list-group-item border-0 border-bottom py-2';
     listItem.innerHTML = `
       <a href="#" class="text-decoration-none recent-bill-link" data-bill-id="${bill.id}">
         <div class="d-flex justify-content-between align-items-start">
           <div>
-            <span class="d-block text-truncate fw-medium text-primary" style="max-width: 230px;">${bill.bill_name}</span>
-            <div class="d-flex align-items-center mt-1">
-              <span class="badge bg-secondary me-2">${bill.committee || '-'}</span>
+            <span class="d-block text-truncate fw-medium text-dark fs-6" style="max-width: 230px;">${bill.bill_name}</span>
+            <div class="d-flex align-items-center mt-1 small">
+              <span class="badge bg-secondary me-1">${bill.committee || '-'}</span>
               <small class="text-muted">${bill.writer || '-'}</small>
             </div>
           </div>
-          <small class="text-muted ms-2">${formatDate(bill.created_at, true)}</small>
+          <small class="text-muted ms-1">${formatDate(bill.created_at, true)}</small>
         </div>
       </a>
     `;
