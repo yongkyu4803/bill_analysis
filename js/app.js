@@ -156,75 +156,76 @@ function setupTabEvents() {
     console.log('탭 이벤트 리스너 설정');
     const markdownTab = document.getElementById('markdown-tab');
     const htmlTab = document.getElementById('html-tab');
-    const markdownEditor = document.getElementById('markdownEditor');
-    const htmlEditor = document.getElementById('htmlEditor');
+    const markdownContent = document.getElementById('markdown-content');
+    const htmlContent = document.getElementById('html-content');
     
-    // 초기화 시 상태 설정
+    if (!markdownTab || !htmlTab) {
+        console.error('탭 요소를 찾을 수 없습니다.');
+        return;
+    }
+    
+    // 마크다운 탭 클릭 시 이벤트
     markdownTab.addEventListener('click', function() {
         console.log('마크다운 탭 클릭됨');
-        // 탭 상태 업데이트
+        
+        // 탭 컨텐트 표시/숨김 처리
+        markdownContent.classList.add('show', 'active');
+        htmlContent.classList.remove('show', 'active');
+        
+        // 활성 탭 상태 업데이트
         markdownTab.classList.add('active');
         htmlTab.classList.remove('active');
         
-        // 에디터 표시 상태 업데이트
-        markdownEditor.style.display = 'block';
-        htmlEditor.style.display = 'none';
-        
         // HTML에서 마크다운으로 변환
         try {
-            const htmlContent = tinymce.get('htmlEditor').getContent();
-            console.log('HTML 에디터 콘텐츠 길이:', htmlContent.length);
+            const htmlContentValue = document.getElementById('billContent').value;
+            console.log('HTML 콘텐츠 길이:', htmlContentValue ? htmlContentValue.length : 0);
             
-            if (htmlContent.trim()) {
-                const markdownContent = convertHtmlToMarkdown(htmlContent);
-                console.log('변환된 마크다운 길이:', markdownContent.length);
-                document.getElementById('markdownEditor').value = markdownContent;
+            if (htmlContentValue && htmlContentValue.trim()) {
+                const markdownContentValue = convertHtmlToMarkdown(htmlContentValue);
+                console.log('변환된 마크다운 길이:', markdownContentValue.length);
+                document.getElementById('billMarkdownContent').value = markdownContentValue;
             }
         } catch (error) {
             console.error('마크다운 탭 전환 중 오류:', error);
         }
-        
-        // 필수 속성 관리
-        markdownEditor.setAttribute('required', 'required');
-        try {
-            tinymce.get('htmlEditor').getBody().removeAttribute('required');
-        } catch (error) {
-            console.error('HTML 에디터 required 속성 제거 오류:', error);
-        }
     });
     
+    // HTML 탭 클릭 시 이벤트
     htmlTab.addEventListener('click', function() {
         console.log('HTML 탭 클릭됨');
-        // 탭 상태 업데이트
+        
+        // 탭 컨텐트 표시/숨김 처리
+        htmlContent.classList.add('show', 'active');
+        markdownContent.classList.remove('show', 'active');
+        
+        // 활성 탭 상태 업데이트
         htmlTab.classList.add('active');
         markdownTab.classList.remove('active');
         
-        // 에디터 표시 상태 업데이트
-        htmlEditor.style.display = 'block';
-        markdownEditor.style.display = 'none';
-        
         // 마크다운에서 HTML로 변환
         try {
-            const markdownContent = document.getElementById('markdownEditor').value;
-            console.log('마크다운 에디터 콘텐츠 길이:', markdownContent.length);
+            const markdownContentValue = document.getElementById('billMarkdownContent').value;
+            console.log('마크다운 콘텐츠 길이:', markdownContentValue ? markdownContentValue.length : 0);
             
-            if (markdownContent.trim()) {
-                const htmlContent = convertMarkdownToHtml(markdownContent);
-                console.log('변환된 HTML 길이:', htmlContent.length);
-                tinymce.get('htmlEditor').setContent(htmlContent);
+            if (markdownContentValue && markdownContentValue.trim()) {
+                const htmlContentValue = convertMarkdownToHtml(markdownContentValue);
+                console.log('변환된 HTML 길이:', htmlContentValue.length);
+                document.getElementById('billContent').value = htmlContentValue;
             }
         } catch (error) {
             console.error('HTML 탭 전환 중 오류:', error);
         }
-        
-        // 필수 속성 관리
-        markdownEditor.removeAttribute('required');
-        try {
-            tinymce.get('htmlEditor').getBody().setAttribute('required', 'required');
-        } catch (error) {
-            console.error('HTML 에디터 required 속성 설정 오류:', error);
-        }
     });
+    
+    // 미리보기 버튼 이벤트
+    const previewMarkdownBtn = document.getElementById('previewMarkdownBtn');
+    if (previewMarkdownBtn) {
+        previewMarkdownBtn.addEventListener('click', function() {
+            console.log('마크다운 미리보기 버튼 클릭됨');
+            showMarkdownPreview();
+        });
+    }
 }
 
 // HTML을 마크다운으로 변환
@@ -606,7 +607,7 @@ async function openEditModal(id) {
         
         // 마크다운 에디터에도 변환하여 설정
         const markdownContent = convertHtmlToMarkdown(htmlContent);
-        document.getElementById('markdownEditor').value = markdownContent;
+        document.getElementById('billMarkdownContent').value = markdownContent;
         
         // 저장 버튼 텍스트 변경
         const saveBtn = document.getElementById('saveBillBtn');
@@ -763,12 +764,12 @@ async function handleFormSubmit(event) {
     
     if (markdownTabActive) {
         // 마크다운 탭 활성화 시
-        const markdownContent = document.getElementById('markdownEditor').value;
-        console.log('마크다운 콘텐츠 길이:', markdownContent.length);
+        const markdownContent = document.getElementById('billMarkdownContent').value;
+        console.log('마크다운 콘텐츠 길이:', markdownContent ? markdownContent.length : 0);
         
-        if (!markdownContent.trim()) {
+        if (!markdownContent || !markdownContent.trim()) {
             alert('내용을 입력해주세요.');
-            document.getElementById('markdownEditor').focus();
+            document.getElementById('billMarkdownContent').focus();
             return;
         }
         
@@ -777,12 +778,13 @@ async function handleFormSubmit(event) {
     } else if (htmlTabActive) {
         // HTML 탭 활성화 시
         try {
-            const htmlContent = tinymce.get('htmlEditor').getContent();
-            console.log('HTML 콘텐츠 길이:', htmlContent.length);
+            // 수정: tinymce 대신 기본 textarea 사용
+            const htmlContent = document.getElementById('billContent').value;
+            console.log('HTML 콘텐츠 길이:', htmlContent ? htmlContent.length : 0);
             
-            if (!htmlContent.trim()) {
+            if (!htmlContent || !htmlContent.trim()) {
                 alert('내용을 입력해주세요.');
-                tinymce.get('htmlEditor').focus();
+                document.getElementById('billContent').focus();
                 return;
             }
             
@@ -790,7 +792,7 @@ async function handleFormSubmit(event) {
             billContent = htmlContent;
         } catch (error) {
             console.error('HTML 콘텐츠 가져오기 오류:', error);
-            alert('에디터에서 내용을 가져오는 중 오류가 발생했습니다.');
+            alert('HTML 내용을 가져오는 중 오류가 발생했습니다.');
             return;
         }
     } else {
@@ -802,19 +804,16 @@ async function handleFormSubmit(event) {
     // 폼 데이터 수집
     const formData = new FormData(form);
     const billData = {
-        title: formData.get('billTitle'),
+        bill_name: formData.get('billTitle'),
         committee: formData.get('billCommittee'),
-        proposer: formData.get('billProposer'),
-        content: billContent,
-        proposedAt: formData.get('billProposedAt'),
-        processedAt: formData.get('billProcessedAt') || null,
-        status: formData.get('billStatus')
+        writer: formData.get('billProposer'),
+        description: billContent
     };
     
     console.log('제출할 데이터:', billData);
     
     // 로딩 표시
-    const submitBtn = document.getElementById('saveBillBtn');
+    const submitBtn = document.getElementById('submitFormBtn');
     const originalBtnText = submitBtn.textContent;
     submitBtn.textContent = '저장 중...';
     submitBtn.disabled = true;
@@ -825,8 +824,8 @@ async function handleFormSubmit(event) {
             console.log(`법안 수정: ID ${currentEditingId}`);
             
             // 기존 법안 업데이트
-            const { data, error } = await supabase
-                .from('bills')
+            const { data, error } = await supabaseClient
+                .from('bill')
                 .update(billData)
                 .eq('id', currentEditingId);
                 
@@ -837,8 +836,8 @@ async function handleFormSubmit(event) {
             console.log('새 법안 등록');
             
             // 새 법안 생성
-            const { data, error } = await supabase
-                .from('bills')
+            const { data, error } = await supabaseClient
+                .from('bill')
                 .insert([billData]);
                 
             if (error) throw error;
@@ -850,9 +849,12 @@ async function handleFormSubmit(event) {
         resetForm();
         loadBills();
         
-        // 모달 닫기
-        const billModal = bootstrap.Modal.getInstance(document.getElementById('billModal'));
-        if (billModal) billModal.hide();
+        // 폼 컨테이너 닫기
+        const formContainer = document.getElementById('formContainer');
+        if (formContainer) {
+            const bsCollapse = bootstrap.Collapse.getInstance(formContainer);
+            if (bsCollapse) bsCollapse.hide();
+        }
         
     } catch (error) {
         console.error('법안 저장 오류:', error);
@@ -877,7 +879,7 @@ function resetForm() {
     }
     
     // 마크다운 에디터 초기화
-    document.getElementById('markdownEditor').value = '';
+    document.getElementById('billMarkdownContent').value = '';
     
     // 편집 모드 초기화
     currentEditingId = null;
