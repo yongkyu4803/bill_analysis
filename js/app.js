@@ -644,144 +644,89 @@ async function deleteBill(billId) {
 }
 
 // 폼 제출 처리
-async function handleFormSubmit(event) {
+function handleFormSubmit(event) {
     event.preventDefault();
     
-    const form = event.target;
+    // 필수 입력 항목 검증
+    const billTitle = document.getElementById('billTitle').value.trim();
+    const billProposer = document.getElementById('billProposer').value.trim();
     
-    // 폼 요소가 존재하는지 확인
-    if (!form.elements['billTitle'] || !form.elements['billProposer']) {
-        console.error('필수 폼 필드가 누락되었습니다');
-        showAlert('폼 필드가 올바르게 정의되지 않았습니다.', 'danger');
+    if (!billTitle) {
+        alert('법안 제목을 입력해주세요.');
+        document.getElementById('billTitle').focus();
         return;
     }
     
-    const billId = form.elements['billId'] ? form.elements['billId'].value : null;
+    if (!billProposer) {
+        alert('발의자를 입력해주세요.');
+        document.getElementById('billProposer').focus();
+        return;
+    }
     
-    // 내용 가져오기 (HTML 또는 마크다운)
+    // 활성화된 탭 확인
+    const markdownTabActive = document.getElementById('markdown-tab').classList.contains('active');
     let content = '';
-    const activeTab = document.querySelector('.nav-link.active');
     
-    if (activeTab && activeTab.id === 'markdown-tab') {
-        // 마크다운 내용을 HTML로 변환
-        const markdownContent = form.elements['billMarkdownContent'].value;
+    if (markdownTabActive) {
+        // 마크다운 탭이 활성화된 경우
+        const markdownContent = document.getElementById('billMarkdownContent').value.trim();
         if (!markdownContent) {
-            showAlert('법안 내용을 입력해주세요.', 'warning');
+            alert('법안 내용을 입력해주세요.');
+            document.getElementById('billMarkdownContent').focus();
             return;
         }
+        
+        // 마크다운을 HTML로 변환
         content = convertMarkdownToHtml(markdownContent);
+        // HTML 텍스트에리어에도 변환된 내용 설정
+        document.getElementById('billContent').value = content;
     } else {
-        // 기본 HTML 내용
-        const htmlContent = form.elements['billContent'].value;
-        if (!htmlContent) {
-            showAlert('법안 내용을 입력해주세요.', 'warning');
+        // HTML 탭이 활성화된 경우
+        content = document.getElementById('billContent').value.trim();
+        if (!content) {
+            alert('법안 내용을 입력해주세요.');
+            document.getElementById('billContent').focus();
             return;
         }
-        content = htmlContent;
     }
     
-    // 제목과 제안자 유효성 검사
-    if (!form.elements['billTitle'].value) {
-        showAlert('법안 제목을 입력해주세요.', 'warning');
-        form.elements['billTitle'].focus();
-        return;
-    }
+    const formData = new FormData(document.getElementById('billForm'));
     
-    if (!form.elements['billProposer'].value) {
-        showAlert('제안자를 입력해주세요.', 'warning');
-        form.elements['billProposer'].focus();
-        return;
-    }
-    
-    const billData = {
-        bill_name: form.elements['billTitle'].value,
-        writer: form.elements['billProposer'].value,
-        description: content,
-        committee: form.elements['billCommittee'].value || '' // 상임위 데이터 추가
+    // 폼 데이터에서 필요한 값 가져오기
+    const bill = {
+        id: currentEditingId || Date.now().toString(), // 편집 중이면 해당 ID 사용, 아니면 새로운 ID 생성
+        title: billTitle,
+        proposer: billProposer,
+        committee: formData.get('billCommittee'),
+        content: content, // 항상 HTML 형식으로 저장
+        registrationDate: currentEditingId ? bills.find(b => b.id === currentEditingId).registrationDate : new Date().toISOString()
     };
     
-    console.log('폼 제출 - 데이터:', billData);
-    
-    try {
-        let response;
-        
-        if (billId) {
-            // 기존 법안 업데이트
-            console.log('법안 업데이트 시도:', billId);
-            response = await supabaseClient
-                .from('bill')
-                .update(billData)
-                .eq('id', billId)
-                .select();
-                
-            console.log('업데이트 응답:', response);
-            
-            if (response.error) throw response.error;
-            showAlert('법안이 성공적으로 수정되었습니다.', 'success');
-        } else {
-            // 새 법안 추가
-            console.log('새 법안 추가 시도');
-            response = await supabaseClient
-                .from('bill')
-                .insert([billData])
-                .select();
-                
-            console.log('추가 응답:', response);
-            
-            if (response.error) throw response.error;
-            showAlert('새 법안이 성공적으로 등록되었습니다.', 'success');
+    if (currentEditingId) {
+        // 기존 법안 수정
+        const index = bills.findIndex(b => b.id === currentEditingId);
+        if (index !== -1) {
+            bills[index] = bill;
         }
-        
-        // 폼 초기화
-        form.reset();
-        
-        // 숨겨진 ID 필드 제거
-        const idField = form.elements['billId'];
-        if (idField) {
-            idField.remove();
-        }
-        
-        // 폼 제목과 버튼 텍스트 원상복구
-        const formTitle = document.querySelector('.form-container h3');
-        if (formTitle) {
-            formTitle.textContent = '법안 등록';
-        }
-        
-        const submitBtn = form.querySelector('button[type="submit"]');
-        if (submitBtn) {
-            submitBtn.textContent = '등록';
-        }
-        
-        // 새 제출 버튼 텍스트 원상복구
-        const newSubmitBtn = document.getElementById('submitFormBtn');
-        if (newSubmitBtn) {
-            newSubmitBtn.textContent = '등록';
-        }
-        
-        // 폼 접기
-        const formContainer = document.getElementById('formContainer');
-        if (formContainer) {
-            const bsCollapse = new bootstrap.Collapse(formContainer);
-            bsCollapse.hide();
-        }
-        
-        // 목록 새로고침
-        loadBills();
-    } catch (error) {
-        console.error('법안 저장 오류:', error);
-        // 상세 오류 정보 표시
-        let errorMsg = '법안 저장 중 오류가 발생했습니다.';
-        if (error.message) {
-            errorMsg += ` (${error.message})`;
-        }
-        if (error.details) {
-            errorMsg += ` - ${error.details}`;
-        }
-        if (error.hint) {
-            errorMsg += ` - 힌트: ${error.hint}`;
-        }
-        showAlert(errorMsg, 'danger');
+    } else {
+        // 새 법안 추가
+        bills.push(bill);
     }
+    
+    // 로컬 스토리지에 저장
+    localStorage.setItem('bills', JSON.stringify(bills));
+    
+    // 법안 목록 다시 렌더링
+    renderBills();
+    
+    // 폼 초기화 및 모달 닫기
+    resetForm();
+    $('#billModal').modal('hide');
+    
+    // 버튼 텍스트 원래대로 변경
+    document.getElementById('submitBillBtn').textContent = '저장';
+    
+    console.log('법안이 성공적으로 저장되었습니다:', bill);
 }
 
 // 마크다운을 HTML로 변환하는 함수
