@@ -256,11 +256,11 @@ function renderBillList(bills) {
             <table class="table table-hover table-sm">
                 <thead>
                     <tr>
-                        <th style="width: 10%;">상임위</th>
-                        <th style="width: 30%;">법안명</th>
-                        <th style="width: 20%;">제안</th>
-                        <th style="width: 20%;">등록</th>
-                        <th style="width: 20%;">보기</th>
+                        <th style="width: 12%;">상임위</th>
+                        <th style="width: 28%;">법안명</th>
+                        <th style="width: 25%;">제안</th>
+                        <th style="width: 25%;">등록</th>
+                        <th style="width: 10%;">보기</th>
                     </tr>
                 </thead>
                 <tbody>
