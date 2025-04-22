@@ -834,11 +834,13 @@ function resetForm() {
     console.log('폼 초기화');
     document.getElementById('billForm').reset();
     
-    // TinyMCE 에디터 내용 초기화
-    try {
-        tinymce.get('htmlEditor').setContent('');
-    } catch (error) {
-        console.error('TinyMCE 에디터 초기화 오류:', error);
+    // TinyMCE 에디터 내용 초기화 - 조건부 체크 추가
+    if (typeof tinymce !== 'undefined' && tinymce.get('htmlEditor')) {
+        try {
+            tinymce.get('htmlEditor').setContent('');
+        } catch (error) {
+            console.error('TinyMCE 에디터 초기화 오류:', error);
+        }
     }
     
     // 마크다운 에디터 초기화
@@ -848,8 +850,8 @@ function resetForm() {
     currentEditingId = null;
     
     // 저장 버튼 텍스트 복원
-    const saveBtn = document.getElementById('saveBillBtn');
-    if (saveBtn) saveBtn.textContent = '저장';
+    const saveBtn = document.getElementById('submitFormBtn');
+    if (saveBtn) saveBtn.textContent = '등록';
 }
 
 // 마크다운을 HTML로 변환
