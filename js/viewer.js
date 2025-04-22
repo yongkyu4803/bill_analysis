@@ -193,7 +193,7 @@ function renderBillList(billsData) {
     nameCell.innerHTML = `
       <div class="d-flex justify-content-between align-items-start">
         <span class="bill-title fw-bold text-primary fs-6">${bill.bill_name}</span>
-        <small class="text-muted ms-2">${formatDate(bill.created_at, true)}</small>
+        <small class="text-muted ms-2 d-md-none">${formatDate(bill.created_at, true)}</small>
       </div>
       <div class="d-block d-md-none small mt-1">
         <div class="d-flex align-items-center">
