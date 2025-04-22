@@ -474,7 +474,7 @@ function viewBillDetails(bill) {
   // 모달 객체 가져오기
   const modal = new bootstrap.Modal(document.getElementById('viewBillModal'));
   
-  // 모달 내용 동적 생성
+  // 기본 정보 생성
   const modalBody = document.getElementById('viewBillModalBody');
   modalBody.innerHTML = `
     <div class="bill-details">
@@ -490,23 +490,30 @@ function viewBillDetails(bill) {
         </div>
         <p><strong>등록일:</strong> ${formatDate(bill.created_at)}</p>
       </div>
-      <div class="border rounded p-3 bg-light">
-        <iframe id="billContentFrame" style="width: 100%; height: 500px; border: none;"></iframe>
+      <div id="billContentDisplay" class="border rounded p-3 bg-light overflow-auto" style="max-height: 500px;">
+        <div class="text-center p-3">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">로딩 중...</span>
+          </div>
+          <p class="mt-2">내용을 불러오는 중...</p>
+        </div>
       </div>
     </div>
   `;
   
-  // iframe 내용 설정
-  const contentFrame = document.getElementById('billContentFrame');
-  if (bill.description && bill.description.trim() !== '') {
-    const blob = new Blob([bill.description], { type: 'text/html' });
-    contentFrame.src = URL.createObjectURL(blob);
-  } else {
-    contentFrame.srcdoc = '<div class="p-3">내용이 없습니다.</div>';
-  }
-  
   // 모달 표시
   modal.show();
+  
+  // 내용 표시 - 별도 처리하여 모달이 먼저 표시되도록 함
+  setTimeout(() => {
+    const contentDisplay = document.getElementById('billContentDisplay');
+    if (bill.description && bill.description.trim() !== '') {
+      // 내용을 안전하게 표시
+      contentDisplay.innerHTML = bill.description;
+    } else {
+      contentDisplay.innerHTML = '<div class="p-3">내용이 없습니다.</div>';
+    }
+  }, 300);
 }
 
 // 수정 폼 열기 함수
