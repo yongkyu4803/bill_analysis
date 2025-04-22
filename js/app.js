@@ -412,11 +412,11 @@ function renderBillList(billsToRender) {
 
 // 법안 목록의 이벤트 리스너 추가
 function addBillListEventListeners() {
-    // 법안명 클릭 시 수정 모달 열기
+    // 법안명 클릭 시 상세 정보 모달 열기 (수정 모달 대신)
     document.querySelectorAll('.bill-title').forEach(title => {
         title.addEventListener('click', function() {
             const billId = this.getAttribute('data-id');
-            openEditModal(billId);
+            viewBillDetails(billId); // openEditModal 대신 viewBillDetails 호출
         });
     });
     
