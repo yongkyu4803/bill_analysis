@@ -76,8 +76,8 @@ function loadModalTemplates() {
                 </div>
                 <p><strong>등록일:</strong> <span id="billDateDisplay"></span></p>
               </div>
-              <div id="billContentDisplay" class="border rounded p-3 bg-light">
-                <iframe id="billContentFrame" style="width: 100%; height: 500px; border: none;"></iframe>
+              <div id="billContentDisplay" class="border rounded p-3 bg-light overflow-auto" style="height: 500px;">
+                <!-- 내용이 여기에 동적으로 표시됩니다 -->
               </div>
             </div>
           </div>
@@ -121,8 +121,8 @@ function loadModalTemplates() {
                 <h6 class="mb-0">분석 보고서 내용</h6>
               </div>
               <div class="card-body">
-                <div id="analysisReportContent">
-                  <iframe id="analysisReportFrame" style="width: 100%; height: 600px; border: none;"></iframe>
+                <div id="analysisReportContent" class="overflow-auto" style="height: 600px;">
+                  <!-- 내용이 여기에 동적으로 표시됩니다 -->
                 </div>
               </div>
             </div>
@@ -354,6 +354,19 @@ function setupEventListeners() {
   });
 }
 
+// HTML 안전하게 처리하는 함수
+function sanitizeHtml(html) {
+  // 기본적인 살균 처리 (실제 프로덕션에서는 더 견고한 라이브러리 사용 권장)
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')  // 스크립트 태그 제거
+    .replace(/javascript\s*:/gi, '')  // 자바스크립트 프로토콜 제거
+    .replace(/on\w+\s*=/gi, '')  // 온로드 등 이벤트 핸들러 제거
+    .replace(/style\s*=\s*"[^"]*"/gi, function(match) {
+      // 스타일 속성에서 위험한 것 제거
+      return match.replace(/expression|url\s*\(/gi, '');
+    });
+}
+
 // 법안 상세 보기 함수
 async function viewBillDetails(bill) {
   console.log('법안 상세 보기:', bill);
@@ -373,16 +386,26 @@ async function viewBillDetails(bill) {
   document.getElementById('billCommitteeDisplay').textContent = bill.committee || '-';
   document.getElementById('billDateDisplay').textContent = formatDate(bill.created_at);
   
-  // 내용 표시 (HTML인 경우 iframe에 로드)
-  const contentFrame = document.getElementById('billContentFrame');
-  if (bill.description && bill.description.trim() !== '') {
-    const blob = new Blob([bill.description], { type: 'text/html' });
-    contentFrame.src = URL.createObjectURL(blob);
-  } else {
-    contentFrame.srcdoc = '<div class="p-3">내용이 없습니다.</div>';
-  }
+  // 내용 표시 - iframe 대신 직접 표시
+  const contentDisplay = document.getElementById('billContentDisplay');
+  contentDisplay.innerHTML = '<div class="text-center p-3"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">내용을 불러오는 중...</p></div>';
   
+  // 모달 표시
   modal.show();
+  
+  // 내용을 별도로 처리하여 모달 표시 후 로드
+  setTimeout(() => {
+    try {
+      if (bill.description && bill.description.trim() !== '') {
+        contentDisplay.innerHTML = sanitizeHtml(bill.description);
+      } else {
+        contentDisplay.innerHTML = '<div class="p-3">내용이 없습니다.</div>';
+      }
+    } catch (e) {
+      console.error('내용 표시 오류:', e);
+      contentDisplay.innerHTML = '<div class="alert alert-warning">내용을 표시하는 중 오류가 발생했습니다.</div>';
+    }
+  }, 300);
 }
 
 // 분석 보고서 모달 표시 함수
@@ -395,16 +418,26 @@ function showAnalysisReport(bill) {
   document.getElementById('analysisReportCommittee').textContent = bill.committee || '-';
   document.getElementById('analysisReportDate').textContent = formatDate(bill.created_at);
   
-  // 내용 표시 (HTML인 경우 iframe에 로드)
-  const contentFrame = document.getElementById('analysisReportFrame');
-  if (bill.description && bill.description.trim() !== '') {
-    const blob = new Blob([bill.description], { type: 'text/html' });
-    contentFrame.src = URL.createObjectURL(blob);
-  } else {
-    contentFrame.srcdoc = '<div class="p-3">분석 보고서 내용이 없습니다.</div>';
-  }
+  // 내용 표시 - iframe 대신 직접 표시
+  const contentDisplay = document.getElementById('analysisReportContent');
+  contentDisplay.innerHTML = '<div class="text-center p-3"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">내용을 불러오는 중...</p></div>';
   
+  // 모달 표시
   modal.show();
+  
+  // 내용을 별도로 처리하여 모달 표시 후 로드
+  setTimeout(() => {
+    try {
+      if (bill.description && bill.description.trim() !== '') {
+        contentDisplay.innerHTML = sanitizeHtml(bill.description);
+      } else {
+        contentDisplay.innerHTML = '<div class="p-3">분석 보고서 내용이 없습니다.</div>';
+      }
+    } catch (e) {
+      console.error('내용 표시 오류:', e);
+      contentDisplay.innerHTML = '<div class="alert alert-warning">내용을 표시하는 중 오류가 발생했습니다.</div>';
+    }
+  }, 300);
 }
 
 // 날짜 포맷 함수
