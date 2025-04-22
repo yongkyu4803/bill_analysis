@@ -14,6 +14,40 @@
     <link href="css/style.css" rel="stylesheet">
     <!-- Supabase 클라이언트 라이브러리 - 최신 버전 사용 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.5/dist/umd/supabase.min.js"></script>
+    <style>
+        /* 모바일 최적화를 위한 여백 조정 */
+        @media (max-width: 768px) {
+            .container {
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
+            }
+            
+            .row {
+                margin-left: -0.5rem;
+                margin-right: -0.5rem;
+            }
+            
+            .col-lg-8, .col-lg-4 {
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
+            }
+            
+            .table th, .table td {
+                padding: 0.5rem 0.25rem;
+            }
+            
+            .btn-sm {
+                padding: 0.25rem 0.4rem;
+            }
+        }
+        
+        /* 상임위 배지 스타일 */
+        .badge.rounded-pill {
+            font-weight: normal;
+            padding: 0.35em 0.65em;
+            border-radius: 50rem;
+        }
+    </style>
 </head>
 <body>
     <header class="bg-primary text-white py-3 shadow-sm">
@@ -43,9 +77,33 @@
                     <div class="form-container">
                         <h3 class="fs-5 mb-3">법안 등록</h3>
                         <form id="billForm">
-                            <div class="mb-3">
-                                <label for="billTitle" class="form-label">법안 제목</label>
-                                <input type="text" class="form-control" id="billTitle" name="billTitle" required>
+                            <div class="row">
+                                <div class="col-md-9 mb-3">
+                                    <label for="billTitle" class="form-label">법안 제목</label>
+                                    <input type="text" class="form-control" id="billTitle" name="billTitle" required>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="billCommittee" class="form-label">상임위</label>
+                                    <select class="form-select" id="billCommittee" name="billCommittee">
+                                        <option value="">선택...</option>
+                                        <option value="국토교통위">국토교통위</option>
+                                        <option value="농림축산식품위">농림축산식품위</option>
+                                        <option value="문화체육관광위">문화체육관광위</option>
+                                        <option value="과학기술정보방송통신위">과학기술정보방송통신위</option>
+                                        <option value="보건복지위">보건복지위</option>
+                                        <option value="산업통상자원중소벤처기업위">산업통상자원중소벤처기업위</option>
+                                        <option value="환경노동위">환경노동위</option>
+                                        <option value="정무위">정무위</option>
+                                        <option value="기획재정위">기획재정위</option>
+                                        <option value="법제사법위">법제사법위</option>
+                                        <option value="행정안전위">행정안전위</option>
+                                        <option value="외교통일위">외교통일위</option>
+                                        <option value="국방위">국방위</option>
+                                        <option value="여성가족위">여성가족위</option>
+                                        <option value="교육위">교육위</option>
+                                        <option value="정보위">정보위</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label for="billProposer" class="form-label">제안자</label>

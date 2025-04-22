@@ -92,26 +92,6 @@ function setupEventListeners() {
         });
     }
     
-    // 일괄 삭제 버튼
-    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
-    if (deleteSelectedBtn) {
-        deleteSelectedBtn.addEventListener('click', handleDeleteSelected);
-    }
-    
-    // 전체 선택 체크박스
-    const selectAllCheckbox = document.getElementById('selectAll');
-    if (selectAllCheckbox) {
-        selectAllCheckbox.addEventListener('change', function() {
-            const checkboxes = document.querySelectorAll('.bill-checkbox');
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = this.checked;
-            });
-            
-            // 삭제 버튼 토글
-            toggleDeleteButton();
-        });
-    }
-    
     // 분석 보고서 보기 버튼 추가
     const analysisReportBtn = document.getElementById('viewAnalysisBtn');
     if (analysisReportBtn) {
@@ -270,21 +250,17 @@ function renderBillList(bills) {
     // 관리 버튼 표시 여부 결정 (관리자 로그인 시에는 표시)
     const adminBtnClass = isAdminLoggedIn ? '' : 'd-none';
     
-    // 테이블 생성
+    // 테이블 생성 - 체크박스 제거하고 상임위 컬럼 추가
     let html = `
         <div class="table-responsive">
-            <table class="table table-hover">
+            <table class="table table-hover table-sm">
                 <thead>
                     <tr>
-                        <th>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="selectAll">
-                            </div>
-                        </th>
-                        <th style="width: 50%;">법안명</th>
-                        <th style="width: 15%;">제안자</th>
-                        <th style="width: 15%;">등록일</th>
-                        <th style="width: 20%;">관리</th>
+                        <th style="width: 15%;">상임위</th>
+                        <th style="width: 40%;">법안명</th>
+                        <th style="width: 15%;">제안</th>
+                        <th style="width: 15%;">등록</th>
+                        <th style="width: 15%;">보기</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -293,14 +269,15 @@ function renderBillList(bills) {
     bills.forEach(bill => {
         const date = new Date(bill.created_at).toLocaleDateString();
         
+        // 상임위 배지 스타일 적용
+        const committee = bill.committee || '';
+        const committeeBadge = committee ? 
+            `<span class="badge rounded-pill bg-light text-dark border">${committee}</span>` : '';
+        
         html += `
             <tr>
-                <td>
-                    <div class="form-check">
-                        <input class="form-check-input bill-checkbox" type="checkbox" data-id="${bill.id}">
-                    </div>
-                </td>
-                <td>${bill.bill_name}</td>
+                <td>${committeeBadge}</td>
+                <td class="text-truncate">${bill.bill_name}</td>
                 <td>${bill.writer}</td>
                 <td>${date}</td>
                 <td>
@@ -350,47 +327,6 @@ function addBillListEventListeners() {
             deleteBill(billId);
         });
     });
-    
-    // 체크박스 변경 시 삭제 버튼 토글
-    document.querySelectorAll('.bill-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', toggleDeleteButton);
-    });
-}
-
-// 삭제 버튼 토글 (체크된 항목이 있을 때만 활성화)
-function toggleDeleteButton() {
-    const deleteBtn = document.getElementById('deleteSelectedBtn');
-    if (!deleteBtn) return;
-    
-    const checkedBoxes = document.querySelectorAll('.bill-checkbox:checked');
-    deleteBtn.disabled = checkedBoxes.length === 0;
-}
-
-// 선택된 법안 삭제 처리
-async function handleDeleteSelected() {
-    const checkedBoxes = document.querySelectorAll('.bill-checkbox:checked');
-    if (checkedBoxes.length === 0) return;
-    
-    if (!confirm(`선택한 ${checkedBoxes.length}개의 법안을 삭제하시겠습니까?`)) {
-        return;
-    }
-    
-    try {
-        const ids = Array.from(checkedBoxes).map(cb => cb.getAttribute('data-id'));
-        
-        const { error } = await supabaseClient
-            .from('bill')
-            .delete()
-            .in('id', ids);
-        
-        if (error) throw error;
-        
-        showAlert('선택한 법안이 성공적으로 삭제되었습니다.', 'success');
-        loadBills(); // 목록 새로고침
-    } catch (error) {
-        console.error('법안 일괄 삭제 오류:', error);
-        showAlert('법안 삭제 중 오류가 발생했습니다.', 'danger');
-    }
 }
 
 // 법안 상세 정보 표시
@@ -421,6 +357,16 @@ async function viewBillDetails(billId) {
         
         const date = new Date(bill.created_at).toLocaleDateString();
         document.getElementById('billDetailDate').textContent = date;
+        
+        // 상임위 설정 (있는 경우에만)
+        const committeeElement = document.getElementById('billDetailCommittee');
+        if (committeeElement) {
+            if (bill.committee) {
+                committeeElement.innerHTML = `<span class="badge rounded-pill bg-light text-dark border">${bill.committee}</span>`;
+            } else {
+                committeeElement.innerHTML = '-';
+            }
+        }
         
         // HTML 콘텐츠 여부 확인
         const contentElement = document.getElementById('billDetailContent');
@@ -527,6 +473,11 @@ async function editBill(billId) {
         form.elements['billProposer'].value = bill.writer;
         form.elements['billContent'].value = bill.description;
         
+        // 상임위 선택
+        if (form.elements['billCommittee']) {
+            form.elements['billCommittee'].value = bill.committee || '';
+        }
+        
         // HTML이 있으면 마크다운으로도 변환해서 채우기
         if (bill.description) {
             const markdownContent = convertHtmlToMarkdown(bill.description);
@@ -626,7 +577,8 @@ async function handleFormSubmit(event) {
     const billData = {
         bill_name: form.elements['billTitle'].value,
         writer: form.elements['billProposer'].value,
-        description: content
+        description: content,
+        committee: form.elements['billCommittee'].value || '' // 상임위 데이터 추가
     };
     
     console.log('폼 제출 - 데이터:', billData);
@@ -764,7 +716,7 @@ async function searchBills(searchTerm) {
         const { data: bills, error } = await supabaseClient
             .from('bill')
             .select('*')
-            .or(`bill_name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,writer.ilike.%${searchTerm}%`)
+            .or(`bill_name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,writer.ilike.%${searchTerm}%,committee.ilike.%${searchTerm}%`)
             .order('created_at', { ascending: false });
         
         if (error) throw error;
