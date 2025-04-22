@@ -39,6 +39,21 @@
             .btn-sm {
                 padding: 0.25rem 0.4rem;
             }
+            
+            /* 테이블 간 여백 제거 */
+            .table-responsive {
+                margin-bottom: 0;
+            }
+            
+            /* 테이블 사이 여백 제거 */
+            .table-responsive + .table-responsive {
+                margin-top: 0;
+            }
+            
+            /* 테이블 자체의 마진 조정 */
+            .table {
+                margin-bottom: 0;
+            }
         }
         
         /* 상임위 배지 스타일 */
@@ -47,6 +62,16 @@
             padding: 0.35em 0.65em;
             border-radius: 50rem;
         }
+
+        /* 커서 스타일 */
+        .cursor-pointer, .bill-title {
+            cursor: pointer;
+        }
+
+        .bill-title:hover {
+            color: #0d6efd;
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -54,14 +79,14 @@
         <div class="container">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
                 <h1 class="mb-2 mb-md-0 fs-3 text-center text-md-start">법률안 분석 리포트</h1>
-                <div class="d-flex flex-column flex-md-row align-items-center w-50 w-md-auto">
-                    <div class="input-group mb-2 mb-md-0 me-md-3 w-50" style="max-width: 200px;">
+                <div class="d-flex flex-column flex-md-row align-items-center">
+                    <div class="input-group mb-2 mb-md-0 me-md-3" style="max-width: 200px;">
                         <input type="text" id="searchInput" class="form-control" placeholder="법안 검색...">
                         <button class="btn btn-light" type="button" id="searchBtn">
                             <i class="bi bi-search"></i>
                         </button>
                     </div>
-                    <button id="loginBtn" class="btn btn-outline-light w-100 w-md-auto" type="button">
+                    <button id="loginBtn" class="btn btn-outline-light" type="button">
                         <i class="bi bi-person-fill me-1"></i>관리자 로그인
                     </button>
                 </div>
@@ -102,140 +127,116 @@
         <div class="row">
             <!-- 법안 목록 -->
             <div class="col-lg-8">
-                <div id="formContainer" class="collapse mb-4">
-                    <div class="form-container">
-                        <h3 class="fs-5 mb-3">법안 등록</h3>
-                        <form id="billForm">
-                            <div class="row">
-                                <div class="col-md-9 mb-3">
-                                    <label for="billTitle" class="form-label">법안 제목</label>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="fs-4 mb-0">법안 분석 보고서</h2>
+                    <button id="showFormBtn" class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#formContainer">
+                        <i class="bi bi-plus-lg me-1"></i>보고서 등록
+                    </button>
+                </div>
+
+                <!-- 폼 섹션 -->
+                <div class="collapse mb-4" id="formContainer">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <form id="billForm">
+                                <div class="mb-3">
+                                    <label for="billTitle" class="form-label">법안명 <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="billTitle" name="billTitle" required>
                                 </div>
-                                <div class="col-md-3 mb-3">
-                                    <label for="billCommittee" class="form-label">상임위</label>
-                                    <select class="form-select" id="billCommittee" name="billCommittee">
-                                        <option value="">선택...</option>
-                                        <option value="국토">국토</option>
-                                        <option value="농림">농림</option>
-                                        <option value="문체">문체</option>
-                                        <option value="과방">과방</option>
-                                        <option value="복지">복지</option>
-                                        <option value="산자">산자</option>
-                                        <option value="환노">환노</option>
-                                        <option value="정무">정무</option>
-                                        <option value="기재">기재</option>
-                                        <option value="법사">법사</option>
-                                        <option value="행안">행안</option>
-                                        <option value="외통">외통</option>
-                                        <option value="국방">국방</option>
-                                        <option value="여가">여가</option>
-                                        <option value="교육">교육</option>
-                                        <option value="정보">정보</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="billProposer" class="form-label">제안자</label>
-                                <input type="text" class="form-control" id="billProposer" name="billProposer" required>
-                            </div>
-                            
-                            <!-- 탭 메뉴 추가 -->
-                            <div class="mb-3">
-                                <label class="form-label">법안 내용</label>
-                                <ul class="nav nav-tabs" id="contentTab" role="tablist">
-                                    <li class="nav-item" role="presentation">
-                                        <button class="nav-link active" id="html-tab" data-bs-toggle="tab" data-bs-target="#html-content" type="button" role="tab" aria-controls="html-content" aria-selected="true">HTML</button>
-                                    </li>
-                                    <li class="nav-item" role="presentation">
-                                        <button class="nav-link" id="markdown-tab" data-bs-toggle="tab" data-bs-target="#markdown-content" type="button" role="tab" aria-controls="markdown-content" aria-selected="false">마크다운</button>
-                                    </li>
-                                </ul>
-                                <div class="tab-content pt-2" id="contentTabContent">
-                                    <div class="tab-pane fade show active" id="html-content" role="tabpanel" aria-labelledby="html-tab">
-                                        <textarea class="form-control" id="billContent" name="billContent" rows="6"></textarea>
-                                        <small class="text-muted">HTML 형식으로 직접 입력합니다.</small>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="billProposer" class="form-label">담당자 <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="billProposer" name="billProposer" required>
                                     </div>
-                                    <div class="tab-pane fade" id="markdown-content" role="tabpanel" aria-labelledby="markdown-tab">
-                                        <textarea class="form-control" id="billMarkdownContent" name="billMarkdownContent" rows="6"></textarea>
-                                        <div class="d-flex justify-content-between align-items-center mt-2">
-                                            <small class="text-muted">마크다운 구문으로 작성합니다. (# 제목, **굵게**, *기울임*, [링크](URL) 등)</small>
-                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="previewMarkdownBtn">미리보기</button>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="billCommittee" class="form-label">소관위원회</label>
+                                        <select class="form-select" id="billCommittee" name="billCommittee">
+                                            <option value="">선택...</option>
+                                            <option value="법">법</option>
+                                            <option value="정">정</option>
+                                            <option value="행">행</option>
+                                            <option value="문">문</option>
+                                            <option value="과">과</option>
+                                            <option value="외">외</option>
+                                            <option value="국">국</option>
+                                            <option value="기">기</option>
+                                            <option value="농">농</option>
+                                            <option value="산">산</option>
+                                            <option value="복">복</option>
+                                            <option value="환">환</option>
+                                            <option value="정정">정정</option>
+                                            <option value="여">여</option>
+                                            <option value="예">예</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- 탭 네비게이션 -->
+                                <div class="nav mb-2" role="tablist">
+                                    <button class="nav-link active" id="htmlTab" data-bs-toggle="tab" data-bs-target="#htmlContent" type="button" role="tab">HTML</button>
+                                    <button class="nav-link" id="markdownTab" data-bs-toggle="tab" data-bs-target="#markdownPane" type="button" role="tab">마크다운</button>
+                                    <button class="btn btn-outline-secondary btn-sm ms-2" id="previewBtn" type="button">
+                                        <i class="bi bi-eye"></i> 미리보기
+                                    </button>
+                                </div>
+                                
+                                <!-- 탭 컨텐츠 -->
+                                <div class="tab-content" id="contentTabsContent">
+                                    <div class="tab-pane fade show active" id="htmlContent" role="tabpanel" aria-labelledby="htmlTab">
+                                        <div class="mb-3">
+                                            <label for="billContent" class="form-label">내용 <span class="text-danger">*</span></label>
+                                            <textarea class="form-control" id="billContent" name="billContent" rows="10" required></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="tab-pane fade" id="markdownPane" role="tabpanel" aria-labelledby="markdownTab">
+                                        <div class="mb-3">
+                                            <label for="markdownContent" class="form-label">마크다운 내용</label>
+                                            <textarea class="form-control" id="markdownContent" name="markdownContent" rows="10"></textarea>
+                                        </div>
+                                        <div class="mb-3 d-none" id="markdownPreview">
+                                            <h5>미리보기</h5>
+                                            <div class="border p-3 bg-light" id="markdownPreviewContent"></div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            
-                            <div class="text-end">
-                                <button type="button" class="btn btn-outline-secondary me-2" data-bs-toggle="collapse" data-bs-target="#formContainer">
-                                    취소
-                                </button>
-                                <button type="button" class="btn btn-primary" id="submitFormBtn">등록</button>
-                            </div>
-                        </form>
+                                
+                                <div class="d-flex justify-content-between mt-3">
+                                    <button type="button" class="btn btn-secondary" id="cancelFormBtn" data-bs-toggle="collapse" data-bs-target="#formContainer">취소</button>
+                                    <button type="button" class="btn btn-primary" id="submitFormBtn">등록</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
-                
-                <!-- 법안 목록 표시 영역 -->
-                <div class="container mt-5" id="billList">
-                    <h2 class="mb-4">법안 분석 리스트</h2>
-                    
-                    <!-- 상임위 네비게이션 추가 -->
-                    <!-- 
-                    <div class="nav-scroller py-1 mb-3 border-bottom committee-nav">
-                        <nav class="nav">
-                            <a class="nav-link active" href="#" data-committee="all">전체</a>
-                            <a class="nav-link" href="#" data-committee="법사">법사</a>
-                            <a class="nav-link" href="#" data-committee="정무">정무</a>
-                            <a class="nav-link" href="#" data-committee="기재">기재</a>
-                            <a class="nav-link" href="#" data-committee="과기">과기</a>
-                            <a class="nav-link" href="#" data-committee="교육">교육</a>
-                            <a class="nav-link" href="#" data-committee="국방">국방</a>
-                            <a class="nav-link" href="#" data-committee="행안">행안</a>
-                            <a class="nav-link" href="#" data-committee="문체">문체</a>
-                            <a class="nav-link" href="#" data-committee="농해">농해</a>
-                            <a class="nav-link" href="#" data-committee="산자">산자</a>
-                            <a class="nav-link" href="#" data-committee="복지">복지</a>
-                            <a class="nav-link" href="#" data-committee="환노">환노</a>
-                            <a class="nav-link" href="#" data-committee="국토">국토</a>
-                            <a class="nav-link" href="#" data-committee="정보">정보</a>
-                            <a class="nav-link" href="#" data-committee="여가">여가</a>
-                        </nav>
-                    </div>
-                    -->
-                    
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>법안 제목</th>
-                                    <th>상임위</th>
-                                    <th>제안자</th>
-                                    <th>등록일</th>
-                                    <th>상태</th>
-                                    <th>작업</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- 법안 목록 표시 부분 -->
-                            </tbody>
-                        </table>
+
+                <!-- 법안 목록 -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th style="width: 50%">법안명</th>
+                                        <th class="d-none d-md-table-cell" style="width: 10%">위원회</th>
+                                        <th class="d-none d-md-table-cell" style="width: 20%">담당자</th>
+                                        <th class="d-none d-md-table-cell" style="width: 10%">등록일</th>
+                                        <th style="width: 10%" class="text-end">관리</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="billTableBody">
+                                    <tr>
+                                        <td colspan="5" class="text-center py-3">로딩 중...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <button class="btn btn-primary admin-only d-none" data-bs-toggle="collapse" data-bs-target="#formContainer">
-                            <i class="bi bi-plus-lg me-1"></i> 보고서 등록
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- 법안 등록 폼 -->
-                
             </div>
             
             <!-- 사이드바 (통계 등) -->
             <div class="col-lg-4">                
-                <div class="card mt-4">
+                <div class="card shadow-sm mb-4">
                     <div class="card-header bg-light">
                         <h3 class="fs-5 mb-0">공지사항</h3>
                     </div>

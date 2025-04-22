@@ -9,6 +9,7 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 let currentEditingId = null; // 현재 편집 중인 법안 ID
 let bills = []; // 법안 목록을 저장할 배열
 let currentCommittee = '전체'; // 현재 선택된 상임위 추가
+let billsData = [];
 
 // 디버깅을 위한 코드
 console.log('Supabase URL:', supabaseUrl);
@@ -21,7 +22,9 @@ if (!supabaseClient) {
   console.error('Supabase 클라이언트를 초기화할 수 없습니다. supabase 객체가 존재하는지 확인하세요.');
 }
 
-// API 키가 유효한지 확인하기 위한 테스트 함수
+/**
+ * Supabase 연결을 테스트합니다.
+ */
 async function testSupabaseConnection() {
   try {
     if (!supabaseClient) {
@@ -47,6 +50,29 @@ async function testSupabaseConnection() {
     console.error('Supabase 연결 테스트 중 예외 발생:', err);
     return false;
   }
+}
+
+/**
+ * 법안 제목 클릭 처리를 위한 함수
+ */
+async function handleBillClick(event) {
+    event.preventDefault();
+    
+    // 클릭된 요소가 법안 제목인 경우
+    if (event.target.classList.contains('bill-title') || event.target.closest('.bill-title')) {
+        const target = event.target.classList.contains('bill-title') ? event.target : event.target.closest('.bill-title');
+        const billId = target.dataset.id;
+        console.log('법안 이름 클릭:', billId);
+        
+        // 법안명에 '분석'이 포함된 경우 분석 보고서 모달 표시
+        const billName = target.textContent;
+        if (billName.includes('분석')) {
+            showAnalysisReport(billId, billName);
+        } else {
+            // 일반 법안인 경우 수정 모달 열기
+            openEditModal(billId);
+        }
+    }
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
@@ -91,6 +117,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // 상임위 탭 이벤트 리스너 설정
     setupCommitteeFilter();
+    
+    // 마크다운 프리뷰 버튼 이벤트 리스너
+    document.getElementById('previewBtn').addEventListener('click', showMarkdownPreview);
 });
 
 // 폼 탭 상태 초기화
@@ -137,6 +166,14 @@ function setupEventListeners() {
         });
     }
     
+    // 폼 취소 버튼
+    const cancelFormBtn = document.getElementById('cancelFormBtn');
+    if (cancelFormBtn) {
+        cancelFormBtn.addEventListener('click', function() {
+            resetForm();
+        });
+    }
+    
     // 검색 기능
     const searchBtn = document.getElementById('searchBtn');
     if (searchBtn) {
@@ -165,110 +202,60 @@ function setupEventListeners() {
     }
     
     // 탭 전환 이벤트 처리
-    setupTabEvents();
+    setupTabEventListeners();
 }
 
 // 탭 전환 이벤트 리스너
-function setupTabEvents() {
-    console.log('탭 이벤트 리스너 설정');
-    const markdownTab = document.getElementById('markdown-tab');
-    const htmlTab = document.getElementById('html-tab');
-    const markdownContent = document.getElementById('markdown-content');
-    const htmlContent = document.getElementById('html-content');
+function setupTabEventListeners() {
+    const htmlTab = document.getElementById('htmlTab');
+    const markdownTab = document.getElementById('markdownTab');
     
-    if (!markdownTab || !htmlTab) {
-        console.error('탭 요소를 찾을 수 없습니다.');
-        return;
-    }
-    
-    // 마크다운 탭 클릭 시 이벤트
-    markdownTab.addEventListener('click', function() {
-        console.log('마크다운 탭 클릭됨');
-        
-        // 탭 컨텐트 표시/숨김 처리
-        markdownContent.classList.add('show', 'active');
-        htmlContent.classList.remove('show', 'active');
-        
-        // 활성 탭 상태 업데이트
-        markdownTab.classList.add('active');
-        htmlTab.classList.remove('active');
-        
-        // HTML에서 마크다운으로 변환
-        try {
-            const htmlContentValue = document.getElementById('billContent').value;
-            console.log('HTML 콘텐츠 길이:', htmlContentValue ? htmlContentValue.length : 0);
-            
-            if (htmlContentValue && htmlContentValue.trim()) {
-                const markdownContentValue = convertHtmlToMarkdown(htmlContentValue);
-                console.log('변환된 마크다운 길이:', markdownContentValue.length);
-                document.getElementById('billMarkdownContent').value = markdownContentValue;
-            }
-        } catch (error) {
-            console.error('마크다운 탭 전환 중 오류:', error);
-        }
-    });
-    
-    // HTML 탭 클릭 시 이벤트
     htmlTab.addEventListener('click', function() {
-        console.log('HTML 탭 클릭됨');
-        
-        // 탭 컨텐트 표시/숨김 처리
-        htmlContent.classList.add('show', 'active');
-        markdownContent.classList.remove('show', 'active');
-        
-        // 활성 탭 상태 업데이트
-        htmlTab.classList.add('active');
-        markdownTab.classList.remove('active');
-        
-        // 마크다운에서 HTML로 변환
-        try {
-            const markdownContentValue = document.getElementById('billMarkdownContent').value;
-            console.log('마크다운 콘텐츠 길이:', markdownContentValue ? markdownContentValue.length : 0);
-            
-            if (markdownContentValue && markdownContentValue.trim()) {
-                const htmlContentValue = convertMarkdownToHtml(markdownContentValue);
-                console.log('변환된 HTML 길이:', htmlContentValue.length);
-                document.getElementById('billContent').value = htmlContentValue;
-            }
-        } catch (error) {
-            console.error('HTML 탭 전환 중 오류:', error);
+        // 마크다운 -> HTML 변환
+        const markdownContent = document.getElementById('markdownContent');
+        if (markdownContent && markdownContent.value.trim() !== '') {
+            const htmlContent = convertMarkdownToHtml(markdownContent.value);
+            tinymce.get('billContent').setContent(htmlContent);
         }
+        // required 속성 관리
+        document.getElementById('billContent').setAttribute('required', '');
+        document.getElementById('markdownContent').removeAttribute('required');
     });
     
-    // 미리보기 버튼 이벤트
-    const previewMarkdownBtn = document.getElementById('previewMarkdownBtn');
-    if (previewMarkdownBtn) {
-        previewMarkdownBtn.addEventListener('click', function() {
-            console.log('마크다운 미리보기 버튼 클릭됨');
-            showMarkdownPreview();
-        });
-    }
+    markdownTab.addEventListener('click', function() {
+        // HTML -> 마크다운 변환
+        const htmlContent = tinymce.get('billContent').getContent();
+        const markdownContent = convertHtmlToMarkdown(htmlContent);
+        document.getElementById('markdownContent').value = markdownContent;
+        // required 속성 관리
+        document.getElementById('markdownContent').setAttribute('required', '');
+        document.getElementById('billContent').removeAttribute('required');
+    });
 }
 
-// HTML을 마크다운으로 변환
+// HTML을 마크다운으로 변환하는 함수
 function convertHtmlToMarkdown(html) {
-    console.log('HTML을 마크다운으로 변환 시작:', html.length ? '내용 있음' : '내용 없음');
+    console.log('HTML 변환 시작:', html.substring(0, 30) + '...');
+    
     try {
-        if (!html) return '';
-        
-        // turndown 라이브러리가 로드되었는지 확인
+        // turndown 라이브러리가 로드됐는지 확인
         if (typeof TurndownService === 'undefined') {
-            console.error('TurndownService 라이브러리가 로드되지 않았습니다.');
-            return html; // 라이브러리가 없으면 원본 반환
+            console.warn('TurndownService 라이브러리가 로드되지 않았습니다. 기본 변환을 사용합니다.');
+            return html;
         }
         
         const turndownService = new TurndownService({
             headingStyle: 'atx',
-            codeBlockStyle: 'fenced',
-            emDelimiter: '*'
+            bulletListMarker: '-',
+            codeBlockStyle: 'fenced'
         });
         
         const markdown = turndownService.turndown(html);
-        console.log('HTML 변환 완료: 마크다운 길이', markdown.length);
+        console.log('HTML 변환 완료');
         return markdown;
     } catch (error) {
-        console.error('HTML 변환 오류:', error);
-        return html; // 오류 시 원본 HTML 반환
+        console.error('HTML 변환 중 오류:', error);
+        return html;
     }
 }
 
@@ -299,154 +286,80 @@ async function loadBills() {
 }
 
 // 법안 목록 렌더링
-function renderBillList(billsToRender) {
-    const billListElement = document.getElementById('billList');
-    if (!billListElement) return;
+function renderBillList(bills) {
+    const billTableBody = document.getElementById('billTableBody');
+    billTableBody.innerHTML = '';
     
-    // 현재 세션 확인 - 관리자 로그인 여부
-    let isAdminLoggedIn = false;
-    
-    // 로그인 버튼 확인으로 로그인 상태 유추
-    const loginBtn = document.getElementById('loginBtn');
-    if (loginBtn && loginBtn.innerHTML.includes('로그아웃')) {
-        isAdminLoggedIn = true;
+    if (bills.length === 0) {
+        billTableBody.innerHTML = `<tr><td colspan="5" class="text-center py-3">등록된 보고서가 없습니다.</td></tr>`;
+        return;
     }
     
-    console.log('관리자 로그인 상태:', isAdminLoggedIn);
-    
-    // 관리 버튼 표시 여부 결정 (관리자 로그인 시에는 표시)
-    const adminBtnClass = isAdminLoggedIn ? '' : 'd-none';
-    
-    // 테이블 생성 - 체크박스 제거하고 상임위 컬럼 추가
-    let html = `
-        <div class="table-responsive">
-            <table class="table table-hover table-sm">
-                <thead>
-                    <tr>
-                        <th style="width: 15%;">상임위</th>
-                        <th style="width: 50%;">법안명</th>
-                        <th style="width: 15%;">제안</th>
-                        <th style="width: 20%;">등록</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
-    
-    billsToRender.forEach(bill => {
-        // 날짜 형식을 YYYY-MM-DD로 변경
-        const createdDate = new Date(bill.created_at);
-        const year = createdDate.getFullYear();
-        const month = String(createdDate.getMonth() + 1).padStart(2, '0'); // 월은 0부터 시작하므로 +1, 두 자리 숫자로 패딩
-        const day = String(createdDate.getDate()).padStart(2, '0'); // 두 자리 숫자로 패딩
-        const formattedDate = `${year}-${month}-${day}`;
+    bills.forEach(bill => {
+        // 날짜 형식 변경: YYYY-MM-DD
+        const formattedDate = new Date(bill.created_at).toISOString().split('T')[0];
         
-        // 상임위 배지 스타일 적용
-        const committee = bill.committee || '';
-        const committeeBadge = committee ? 
-            `<span class="badge rounded-pill bg-light text-dark border">${committee}</span>` : '';
+        // 위원회와 담당자에 기본값 설정
+        const committee = bill.committee || '미지정';
+        const writer = bill.writer || '미지정';
         
-        html += `
-            <tr>
-                <td>${committeeBadge}</td>
-                <td class="bill-title cursor-pointer" data-id="${bill.id}">${bill.bill_name}</td>
-                <td>${bill.writer}</td>
-                <td>${formattedDate}</td>
-            </tr>
+        // 관리자 여부 확인을 위한 변수
+        const isAdmin = checkIfAdmin();
+        
+        // 모바일 친화적인 테이블 행 생성
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>
+                <span class="bill-title fw-medium" data-id="${bill.id}">${bill.bill_name}</span>
+                <div class="d-block d-md-none small text-muted mt-1">
+                    <span class="me-2"><i class="bi bi-folder2"></i> ${committee}</span>
+                    <span class="me-2"><i class="bi bi-person"></i> ${writer}</span>
+                    <span><i class="bi bi-calendar3"></i> ${formattedDate}</span>
+                </div>
+            </td>
+            <td class="d-none d-md-table-cell">${committee}</td>
+            <td class="d-none d-md-table-cell">${writer}</td>
+            <td class="d-none d-md-table-cell">${formattedDate}</td>
+            <td class="text-end">
+                <div class="btn-group btn-group-sm">
+                    ${isAdmin ? `
+                        <button class="btn btn-outline-primary edit-btn" data-id="${bill.id}">
+                            <i class="bi bi-pencil"></i><span class="d-none d-sm-inline"> 수정</span>
+                        </button>
+                        <button class="btn btn-outline-danger delete-btn" data-id="${bill.id}">
+                            <i class="bi bi-trash"></i><span class="d-none d-sm-inline"> 삭제</span>
+                        </button>
+                    ` : ''}
+                </div>
+            </td>
         `;
+        billTableBody.appendChild(row);
     });
     
-    // 관리자 로그인 시에만 관리 버튼 표시
-    if (isAdminLoggedIn) {
-        html += `
-            </tbody>
-            </table>
-        </div>
-        
-        <div class="table-responsive mt-3">
-            <table class="table table-hover table-sm">
-                <thead>
-                    <tr>
-                        <th style="width: 15%;">상임위</th>
-                        <th style="width: 50%;">법안명</th>
-                        <th style="width: 35%;">관리</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-        
-        billsToRender.forEach(bill => {
-            // 상임위 배지 스타일 적용
-            const committee = bill.committee || '';
-            const committeeBadge = committee ? 
-                `<span class="badge rounded-pill bg-light text-dark border">${committee}</span>` : '';
-            
-            html += `
-                <tr>
-                    <td>${committeeBadge}</td>
-                    <td class="bill-title cursor-pointer" data-id="${bill.id}">${bill.bill_name}</td>
-                    <td>
-                        <button class="btn btn-sm btn-warning edit-bill admin-only" data-id="${bill.id}" title="수정">
-                            <i class="bi bi-pencil"></i>
-                        </button>
-                        <button class="btn btn-sm btn-danger delete-bill admin-only" data-id="${bill.id}" title="삭제">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
-        });
-    }
-    
-    html += `
-            </tbody>
-        </table>
-    </div>
-    `;
-    
-    billListElement.innerHTML = html;
-    
-    // CSS 스타일 추가
-    const style = document.createElement('style');
-    style.innerHTML = `
-        .cursor-pointer {
-            cursor: pointer;
-        }
-        .bill-title:hover {
-            text-decoration: underline;
-            color: #0d6efd;
-        }
-    `;
-    document.head.appendChild(style);
-    
-    // 이벤트 리스너 추가
-    addBillListEventListeners();
-}
-
-// 법안 목록의 이벤트 리스너 추가
-function addBillListEventListeners() {
-    // 법안명 클릭 시 수정 모달 열기
+    // 법안명 클릭 이벤트 리스너 추가
     document.querySelectorAll('.bill-title').forEach(title => {
         title.addEventListener('click', function() {
-            const billId = this.getAttribute('data-id');
-            editBill(billId); // viewBillDetails 대신 editBill 호출
+            viewBillDetails(this.dataset.id);
         });
     });
     
-    // 수정 버튼
-    document.querySelectorAll('.edit-bill').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const billId = this.getAttribute('data-id');
-            editBill(billId);
+    // 수정 버튼 이벤트 리스너 추가 (관리자용)
+    if (document.querySelectorAll('.edit-btn').length > 0) {
+        document.querySelectorAll('.edit-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                editBill(this.dataset.id);
+            });
         });
-    });
+    }
     
-    // 삭제 버튼
-    document.querySelectorAll('.delete-bill').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const billId = this.getAttribute('data-id');
-            deleteBill(billId);
+    // 삭제 버튼 이벤트 리스너 추가 (관리자용)
+    if (document.querySelectorAll('.delete-btn').length > 0) {
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                deleteBill(this.dataset.id);
+            });
         });
-    });
+    }
 }
 
 // 법안 상세 정보 표시
@@ -736,94 +649,124 @@ async function deleteBill(billId) {
     }
 }
 
-// 폼 제출 이벤트 처리
-async function handleFormSubmit(event) {
+/**
+ * 폼 제출 처리
+ */
+function handleFormSubmit(event) {
     event.preventDefault();
-    console.log('폼 제출 시작');
-
+    console.log('폼 제출 처리 시작');
+    
     // 필수 필드 검증
     const billTitle = document.getElementById('billTitle').value.trim();
     const billProposer = document.getElementById('billProposer').value.trim();
-
+    
     if (!billTitle) {
         alert('법안 제목을 입력해주세요.');
         document.getElementById('billTitle').focus();
         return;
     }
-
+    
     if (!billProposer) {
-        alert('제안자를 입력해주세요.');
+        alert('발의자를 입력해주세요.');
         document.getElementById('billProposer').focus();
         return;
     }
-
-    // 활성화된 탭 확인
-    const markdownTab = document.querySelector('#contentTabs .nav-link.active[href="#markdownTab"]');
-    const isMarkdownTabActive = markdownTab !== null;
-    console.log('마크다운 탭 활성화 상태:', isMarkdownTabActive);
-
-    // 컨텐츠 가져오기
-    let content = '';
+    
+    // 현재 활성화된 탭 확인 (마크다운 또는 HTML)
+    const mdTab = document.getElementById('markdown-tab');
+    const htmlTab = document.getElementById('html-tab');
+    const isMarkdownTabActive = mdTab && mdTab.classList.contains('active');
+    const isHtmlTabActive = htmlTab && htmlTab.classList.contains('active');
+    
+    console.log('활성 탭 상태:', { 마크다운: isMarkdownTabActive, HTML: isHtmlTabActive });
+    
+    let finalContent = '';
     
     if (isMarkdownTabActive) {
         // 마크다운 탭이 활성화된 경우
-        const markdown = document.getElementById('billMarkdown').value;
-        content = convertMarkdownToHtml(markdown);
-        console.log('마크다운을 HTML로 변환:', markdown.length, '->', content.length);
+        const markdownContent = document.getElementById('billMarkdownContent').value;
+        console.log('마크다운 입력 내용 길이:', markdownContent ? markdownContent.length : 0);
+        finalContent = convertMarkdownToHtml(markdownContent);
     } else {
-        // HTML 탭이 활성화된 경우
-        if (typeof tinymce !== 'undefined' && tinymce.get('billContent')) {
-            content = tinymce.get('billContent').getContent();
-            console.log('TinyMCE에서 HTML 가져오기:', content.length);
-        }
+        // HTML 탭이 활성화된 경우 (기본값)
+        finalContent = document.getElementById('billContent').value;
+        console.log('HTML 입력 내용 길이:', finalContent ? finalContent.length : 0);
     }
-
+    
+    // 콘텐츠 로깅
+    console.log('최종 콘텐츠 길이:', finalContent.length);
+    
     // 폼 데이터 수집
-    const formDataObj = {
+    const billData = {
         bill_name: billTitle,
         writer: billProposer,
         committee: document.getElementById('billCommittee').value,
-        description: content
+        description: finalContent,
+        created_at: new Date().toISOString()
     };
     
-    console.log('저장할 데이터:', formDataObj);
-
-    // 신규 등록 또는 수정 처리
+    console.log('저장할 데이터:', billData);
+    
+    // 기존 데이터 수정 또는 새 데이터 추가
     if (currentEditingId) {
-        // 기존 법안 수정
-        await updateBill(currentEditingId, formDataObj);
+        updateBill(currentEditingId, billData);
     } else {
-        // 새 법안 등록
-        await saveBill(formDataObj);
+        saveBill(billData);
     }
+    
+    // 폼 초기화
+    document.getElementById('billForm').reset();
+    
+    document.getElementById('submitFormBtn').textContent = '저장';
+    currentEditingId = null;
+    
+    // 폼 영역 닫기
+    const formContainer = document.getElementById('formContainer');
+    if (formContainer) {
+        const bsCollapse = new bootstrap.Collapse(formContainer);
+        bsCollapse.hide();
+    }
+    
+    return false;
 }
 
-// 마크다운을 HTML로 변환
+/**
+ * 현재 사용자가 관리자인지 확인합니다.
+ */
+function checkIfAdmin() {
+    const loginBtn = document.getElementById('loginBtn');
+    if (!loginBtn) return false;
+    
+    // 로그인 버튼이 '로그아웃'으로 표시되어 있으면 관리자로 판단
+    return loginBtn.textContent.includes('로그아웃');
+}
+
+// 마크다운을 HTML로 변환하는 함수
 function convertMarkdownToHtml(markdown) {
-    console.log('마크다운을 HTML로 변환 시작:', markdown.length ? '내용 있음' : '내용 없음');
+    console.log('마크다운 변환 시작:', markdown.substring(0, 30) + '...');
+    
     try {
-        if (!markdown) return '';
-        
-        // marked 라이브러리가 로드되었는지 확인
+        // marked.js 라이브러리가 로드됐는지 확인
         if (typeof marked === 'undefined') {
-            console.error('marked 라이브러리가 로드되지 않았습니다.');
-            return markdown; // 라이브러리가 없으면 원본 반환
+            console.warn('marked 라이브러리가 로드되지 않았습니다. 기본 변환을 사용합니다.');
+            return `<p>${markdown}</p>`;
         }
         
         // marked 옵션 설정
         marked.setOptions({
-            breaks: true,        // 줄바꿈 활성화
-            gfm: true,          // GitHub 플레이버 마크다운 활성화
+            breaks: true,        // 줄바꿈 허용
+            gfm: true,           // GitHub 플레이버드 마크다운 사용
             headerIds: true,     // 헤더에 ID 추가
             sanitize: false      // HTML 태그 허용
         });
         
+        // 마크다운을 HTML로 변환
         const html = marked.parse(markdown);
-        console.log('마크다운 변환 완료: HTML 길이', html.length);
+        console.log('마크다운 변환 완료');
         return html;
     } catch (error) {
-        console.error('마크다운 변환 오류:', error);
-        return '<p>' + markdown + '</p>'; // 오류 시 단순히 p 태그로 감싸서 반환
+        console.error('마크다운 변환 중 오류:', error);
+        return `<p>${markdown}</p>`;
     }
 }
 
@@ -1074,8 +1017,8 @@ function showAdminUI() {
     
     // 약간의 지연 후 버튼들의 가시성 다시 확인
     setTimeout(() => {
-        const editButtons = document.querySelectorAll('.edit-bill');
-        const deleteButtons = document.querySelectorAll('.delete-bill');
+        const editButtons = document.querySelectorAll('.edit-btn');
+        const deleteButtons = document.querySelectorAll('.delete-btn');
         
         console.log('수정 버튼 수:', editButtons.length);
         console.log('삭제 버튼 수:', deleteButtons.length);
@@ -1221,66 +1164,124 @@ async function checkUserRole(user) {
     }
 }
 
-// 마크다운 미리보기 모달 표시
+// 마크다운 프리뷰 표시
 function showMarkdownPreview() {
-    const markdownContent = document.getElementById('billMarkdownContent').value;
+    console.log('마크다운 프리뷰 시작');
     
-    if (!markdownContent) {
-        showAlert('미리보기할 마크다운 내용이 없습니다.', 'warning');
+    // 현재 활성화된 탭 확인
+    const isMarkdownTabActive = document.getElementById('markdownTab').classList.contains('active');
+    const markdownTextarea = document.getElementById('markdownContent');
+    
+    // 마크다운 내용 가져오기
+    let markdownText = '';
+    if (isMarkdownTabActive && markdownTextarea) {
+        markdownText = markdownTextarea.value.trim();
+    } else {
+        // HTML 탭이 활성화된 경우 HTML을 마크다운으로 변환
+        const htmlContent = tinymce.get('billContent').getContent();
+        markdownText = convertHtmlToMarkdown(htmlContent);
+    }
+    
+    if (!markdownText) {
+        alert('프리뷰할 내용이 없습니다.');
         return;
     }
     
-    // HTML로 변환
-    let htmlContent;
+    // 마크다운을 HTML로 변환
+    const htmlContent = convertMarkdownToHtml(markdownText);
     
-    try {
-        // marked.js 라이브러리 사용
-        if (typeof marked !== 'undefined') {
-            htmlContent = marked.parse(markdownContent);
-        } else {
-            htmlContent = convertMarkdownToHtml(markdownContent);
-        }
-    } catch (error) {
-        console.error('마크다운 변환 오류:', error);
-        showAlert('마크다운 변환 중 오류가 발생했습니다.', 'danger');
-        return;
-    }
+    // 모달 생성
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'markdownPreviewModal';
+    modal.tabIndex = '-1';
+    modal.setAttribute('aria-labelledby', 'markdownPreviewModalLabel');
+    modal.setAttribute('aria-hidden', 'true');
     
-    // 모달 HTML 생성
-    let previewModal = document.getElementById('markdownPreviewModal');
-    
-    if (!previewModal) {
-        const modalHTML = `
-        <div class="modal fade" id="markdownPreviewModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">마크다운 미리보기</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div id="markdownPreviewContent" class="p-3 border rounded bg-light"></div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
-                    </div>
+    modal.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="markdownPreviewModalLabel">마크다운 프리뷰</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <iframe id="previewFrame" style="width: 100%; height: 500px; border: none;"></iframe>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
                 </div>
             </div>
         </div>
-        `;
-        
-        // 모달을 body에 추가
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        previewModal = document.getElementById('markdownPreviewModal');
-    }
+    `;
     
-    // 미리보기 내용 설정
-    const previewContent = document.getElementById('markdownPreviewContent');
-    previewContent.innerHTML = htmlContent;
+    document.body.appendChild(modal);
     
     // 모달 표시
-    const modal = new bootstrap.Modal(previewModal);
-    modal.show();
+    const modalInstance = new bootstrap.Modal(modal);
+    modalInstance.show();
+    
+    // iframe에 내용 로드
+    const iframe = document.getElementById('previewFrame');
+    const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+    
+    iframeDocument.open();
+    iframeDocument.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>마크다운 프리뷰</title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+            <style>
+                body {
+                    padding: 20px;
+                    font-family: sans-serif;
+                    line-height: 1.6;
+                }
+                img {
+                    max-width: 100%;
+                }
+                pre {
+                    background-color: #f8f9fa;
+                    padding: 10px;
+                    border-radius: 4px;
+                    overflow-x: auto;
+                }
+                table {
+                    border-collapse: collapse;
+                    width: 100%;
+                    margin-bottom: 1rem;
+                }
+                table, th, td {
+                    border: 1px solid #dee2e6;
+                }
+                th, td {
+                    padding: 8px;
+                    text-align: left;
+                }
+                blockquote {
+                    border-left: 4px solid #ced4da;
+                    padding-left: 15px;
+                    color: #6a737d;
+                    margin-left: 0;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                ${htmlContent}
+            </div>
+        </body>
+        </html>
+    `);
+    iframeDocument.close();
+    
+    // 모달이 닫힐 때 모달 요소 제거
+    modal.addEventListener('hidden.bs.modal', function() {
+        modal.remove();
+    });
 }
 
 // 상임위 필터링 함수 추가
@@ -1435,22 +1436,108 @@ function resetForm() {
     if (saveBtn) saveBtn.textContent = '등록';
 }
 
-// 법안 클릭 이벤트 처리
-async function handleBillClick(event) {
-    event.preventDefault();
+// 추가 스타일 적용
+document.head.insertAdjacentHTML('beforeend', `
+<style>
+    .cursor-pointer {
+        cursor: pointer;
+    }
+    .bill-title {
+        cursor: pointer;
+        display: block;
+        color: #0d6efd;
+    }
+    .bill-title:hover {
+        text-decoration: underline;
+    }
+    .badge {
+        font-weight: normal;
+    }
+    .table td {
+        vertical-align: middle;
+    }
+    @media (max-width: 767.98px) {
+        .table thead th {
+            border-bottom-width: 1px;
+        }
+        .table-responsive {
+            margin-bottom: 0.5rem;
+        }
+        .table td {
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+        }
+        .bill-title {
+            font-size: 1.05rem;
+        }
+    }
+</style>
+`);
+
+// 문서 전체 클릭 이벤트 리스너
+document.addEventListener('click', e => {
+    // 수정 버튼 클릭 시 처리
+    if (e.target.classList.contains('edit-btn') || e.target.closest('.edit-btn')) {
+        const target = e.target.classList.contains('edit-btn') ? e.target : e.target.closest('.edit-btn');
+        const billId = target.dataset.id;
+        console.log('수정 버튼 클릭됨, ID:', billId);
+        editBill(billId);
+        e.stopPropagation();
+        return;
+    }
     
-    // 클릭된 요소가 법안 제목인 경우
-    if (event.target.classList.contains('bill-title')) {
-        const billId = event.target.getAttribute('data-id');
-        console.log('법안 이름 클릭:', billId);
+    // 삭제 버튼 클릭 시 처리
+    if (e.target.classList.contains('delete-btn') || e.target.closest('.delete-btn')) {
+        const target = e.target.classList.contains('delete-btn') ? e.target : e.target.closest('.delete-btn');
+        const billId = target.dataset.id;
+        deleteBill(billId);
+    }
+});
+
+// 법안 제목 클릭 이벤트 리스너 추가
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.addEventListener('click', function(e) {
+        // bill-title 클릭 시 처리
+        if (e.target.classList.contains('bill-title') || e.target.closest('.bill-title')) {
+            handleBillClick(e);
+            e.stopPropagation(); // 이벤트 전파 중지
+        }
+    });
+});
+
+/**
+ * 새 법안을 생성합니다.
+ */
+async function createBill(billData) {
+    try {
+        // 저장 버튼 비활성화
+        const submitBtn = document.getElementById('submitFormBtn');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = '저장 중...';
+        }
         
-        // 법안명에 '분석'이 포함된 경우 분석 보고서 모달 표시
-        const billName = event.target.textContent;
-        if (billName.includes('분석')) {
-            showAnalysisReport(billId, billName);
-        } else {
-            // 일반 법안인 경우 수정 모달 열기
-            openEditModal(billId);
+        // 법안 데이터 저장
+        const { data, error } = await supabaseClient
+            .from('bill')
+            .insert([billData]);
+            
+        if (error) throw error;
+        
+        console.log('새 법안 저장 완료:', data);
+        showAlert('법안이 성공적으로 등록되었습니다.', 'success');
+        
+        // 법안 목록 새로고침
+        loadBills();
+    } catch (error) {
+        console.error('법안 저장 오류:', error);
+        showAlert('법안 저장 중 오류가 발생했습니다.', 'danger');
+    } finally {
+        // 저장 버튼 다시 활성화
+        const submitBtn = document.getElementById('submitFormBtn');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '저장';
         }
     }
 } 
