@@ -179,7 +179,7 @@ function renderBillList(billsData) {
   
   billsData.forEach((bill) => {
     const row = document.createElement('tr');
-    row.className = 'align-middle';
+    row.className = 'align-middle py-2';
     
     // 위원회 셀
     const committeeCell = document.createElement('td');
@@ -188,11 +188,18 @@ function renderBillList(billsData) {
     
     // 법안명 셀
     const nameCell = document.createElement('td');
+    nameCell.style.paddingTop = '0.4rem';
+    nameCell.style.paddingBottom = '0.4rem';
     nameCell.innerHTML = `
-      <span class="bill-title fw-bold text-primary fs-6">${bill.bill_name}</span>
-      <div class="d-block d-md-none small text-muted mt-1">
-        <span class="badge bg-secondary rounded-pill me-2">${bill.committee || '-'}</span>
-        <span>${bill.writer || '-'}</span>
+      <div class="d-flex justify-content-between align-items-start">
+        <span class="bill-title fw-bold text-primary fs-6">${bill.bill_name}</span>
+        <small class="text-muted ms-2">${formatDate(bill.created_at, true)}</small>
+      </div>
+      <div class="d-block d-md-none small mt-1">
+        <div class="d-flex align-items-center">
+          <span class="badge bg-secondary me-1">${bill.committee || '-'}</span>
+          <small class="text-muted">${bill.writer || '-'}</small>
+        </div>
       </div>
     `;
     
