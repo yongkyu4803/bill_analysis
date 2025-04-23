@@ -434,6 +434,19 @@ async function saveResponse() {
 
     const response = document.getElementById('responseText').value;
     const status = document.getElementById('statusSelect').value;
+    
+    // 답변 내용 유효성 검사
+    if (!response.trim()) {
+        showAlert('warning', '답변 내용을 입력해주세요.');
+        return;
+    }
+
+    // 완료 상태 시 답변 필수 체크
+    if (status === '완료' && !response.trim()) {
+        showAlert('warning', '완료 상태로 변경하기 전에 답변을 입력해주세요.');
+        return;
+    }
+
     const responseDate = status === '완료' ? new Date().toISOString() : null;
 
     try {
@@ -467,7 +480,15 @@ async function updateStatus(e) {
     if (!currentFeedback) return;
 
     const newStatus = e.target.value;
+    const currentResponse = document.getElementById('responseText').value;
     
+    // 완료 상태 변경 시 답변 필수 체크
+    if (newStatus === '완료' && !currentResponse.trim()) {
+        showAlert('warning', '완료 상태로 변경하기 전에 답변을 입력해주세요.');
+        e.target.value = currentFeedback.status;
+        return;
+    }
+
     try {
         const { error } = await supabaseClient
             .from('feedback')
