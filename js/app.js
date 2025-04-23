@@ -568,19 +568,25 @@ async function editBill(billId) {
         
         form.elements['billTitle'].value = bill.bill_name;
         form.elements['billProposer'].value = bill.writer;
-        form.elements['billContent'].value = bill.description;
+        form.elements['billContent'].value = bill.description || '';
         
         // 상임위 선택
         if (form.elements['billCommittee']) {
             form.elements['billCommittee'].value = bill.committee || '';
         }
         
-        // HTML이 있으면 마크다운으로도 변환해서 채우기
-        if (bill.description) {
-            const markdownContent = convertHtmlToMarkdown(bill.description);
-            const markdownField = form.elements['billMarkdownContent'];
-            if (markdownField) {
-                markdownField.value = markdownContent;
+        // 마크다운 필드 채우기
+        const markdownField = form.elements['billMarkdownContent'];
+        if (markdownField) {
+            // description_markdown이 있으면 그것을 사용
+            if (bill.description_markdown) {
+                console.log('마크다운 원본 데이터 사용:', bill.description_markdown.substring(0, 30) + '...');
+                markdownField.value = bill.description_markdown;
+            } 
+            // 없으면 HTML을 마크다운으로 변환
+            else if (bill.description) {
+                console.log('HTML을 마크다운으로 변환:', bill.description.substring(0, 30) + '...');
+                markdownField.value = convertHtmlToMarkdown(bill.description);
             }
         }
         
@@ -680,31 +686,31 @@ function handleFormSubmit(event) {
     
     console.log('활성 탭 상태:', { 마크다운: isMarkdownTabActive, HTML: isHtmlTabActive });
     
-    let finalContent = '';
+    // 법안 데이터 객체 초기화
+    const billData = {
+        bill_name: billTitle,
+        writer: billProposer,
+        committee: document.getElementById('billCommittee').value,
+        created_at: new Date().toISOString()
+    };
     
     if (isMarkdownTabActive) {
         // 마크다운 탭이 활성화된 경우
         const markdownContent = document.getElementById('billMarkdownContent').value;
         console.log('마크다운 입력 내용 길이:', markdownContent ? markdownContent.length : 0);
-        finalContent = convertMarkdownToHtml(markdownContent);
+        
+        // 마크다운 원본 저장
+        billData.description_markdown = markdownContent;
+        
+        // HTML로 변환하여 description에도 저장
+        billData.description = convertMarkdownToHtml(markdownContent);
     } else {
         // HTML 탭이 활성화된 경우 (기본값)
-        finalContent = document.getElementById('billContent').value;
-        console.log('HTML 입력 내용 길이:', finalContent ? finalContent.length : 0);
+        billData.description = document.getElementById('billContent').value;
+        console.log('HTML 입력 내용 길이:', billData.description ? billData.description.length : 0);
     }
     
     // 콘텐츠 로깅
-    console.log('최종 콘텐츠 길이:', finalContent.length);
-    
-    // 폼 데이터 수집
-    const billData = {
-        bill_name: billTitle,
-        writer: billProposer,
-        committee: document.getElementById('billCommittee').value,
-        description: finalContent,
-        created_at: new Date().toISOString()
-    };
-    
     console.log('저장할 데이터:', billData);
     
     // 기존 데이터 수정 또는 새 데이터 추가
