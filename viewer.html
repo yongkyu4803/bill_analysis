@@ -1,0 +1,82 @@
+<head>
+    <style>
+        /* 모바일 모달 최적화 */
+        @media (max-width: 767.98px) {
+            .modal-dialog {
+                margin: 1rem auto;
+            }
+            
+            .modal-content {
+                border-radius: 0.5rem;
+                transform: translateZ(0); /* 하드웨어 가속 활성화 */
+                -webkit-transform: translateZ(0);
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                background-color: #ffffff !important;
+            }
+            
+            /* 모달 내 모든 텍스트 가시성 확보 */
+            .modal-title, 
+            .modal-body, 
+            .modal-body * {
+                color: #000000 !important;
+                opacity: 1 !important;
+            }
+            
+            .modal-header {
+                border-bottom: 1px solid #dee2e6;
+                background-color: #f8f9fa;
+            }
+            
+            .modal-body {
+                padding: 1rem;
+            }
+            
+            .nav-tabs {
+                margin-bottom: 1rem;
+            }
+            
+            .tab-content {
+                padding: 0.5rem;
+                background-color: #ffffff;
+                border: 1px solid #dee2e6;
+                border-top: none;
+                border-radius: 0 0 0.25rem 0.25rem;
+            }
+        }
+    </style>
+</head>
+
+<div class="modal fade" id="billModal" tabindex="-1" aria-labelledby="billModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="billModalLabel" style="color: #000000;">법안 상세</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="color: #000000;">
+                <!-- 동적으로 내용이 채워집니다 -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="analysisModal" tabindex="-1" aria-labelledby="analysisModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="analysisModalLabel" style="color: #000000;">분석 보고서</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="color: #000000;">
+                <!-- 동적으로 내용이 채워집니다 -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+            </div>
+        </div>
+    </div>
+</div> 

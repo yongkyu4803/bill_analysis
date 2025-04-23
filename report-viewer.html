@@ -84,10 +84,13 @@
                 <h1 class="mb-2 mb-md-0 fs-3 text-center text-md-start">법률안 리포트</h1>
                 <div class="d-flex align-items-center">
                     <a href="index.html" class="btn btn-outline-light btn-sm me-2">
-                        <i class="bi bi-house-fill me-1"></i>
+                        <i class="bi bi-house-fill me-1"></i> 홈
+                    </a>
+                    <a href="feedback.html" class="btn btn-outline-light btn-sm me-2" id="feedbackBtn">
+                        <i class="bi bi-chat-text-fill me-1"></i> 피드백
                     </a>
                     <button id="printBtn" class="btn btn-outline-light btn-sm">
-                        <i class="bi bi-printer-fill me-1"></i>
+                        <i class="bi bi-printer-fill me-1"></i> 인쇄
                     </button>
                 </div>
             </div>
@@ -108,7 +111,12 @@
             <!-- 보고서 내용 컨테이너 -->
             <div id="reportContentContainer" class="col-12 report-container d-none">
                 <div class="report-header">
-                    <h2 id="reportTitle" class="mb-3 fs-3"></h2>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h2 id="reportTitle" class="mb-3 fs-3"></h2>
+                        <a id="specificFeedbackBtn" href="feedback.html" class="btn btn-primary btn-sm no-print">
+                            <i class="bi bi-chat-text-fill me-1"></i> 이 법안에 대한 피드백
+                        </a>
+                    </div>
                     <div class="report-meta">
                         <div class="report-meta-item">
                             <i class="bi bi-person"></i> 발의자: <span id="reportWriter"></span>
@@ -124,6 +132,19 @@
                 
                 <div id="reportContent" class="report-content">
                     <!-- 보고서 내용이 여기에 로드됩니다 -->
+                </div>
+                
+                <!-- 피드백 배너 -->
+                <div class="alert alert-secondary mt-4 no-print">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-chat-quote-fill me-2"></i>
+                            <span>이 법안에 대한 의견이나 추가 분석 요청이 있으신가요?</span>
+                        </div>
+                        <a href="feedback.html" class="btn btn-outline-secondary btn-sm" id="bottomFeedbackBtn">
+                            <i class="bi bi-chat-text-fill me-1"></i> 피드백 남기기
+                        </a>
+                    </div>
                 </div>
             </div>
             
