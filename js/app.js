@@ -279,87 +279,120 @@ async function loadBills() {
         
         console.log("로드된 법안:", data);
         bills = data || [];
-        renderBillList(bills);
+        renderBills(bills);
     } catch (error) {
         console.error("법안 로딩 중 예외 발생:", error);
     }
 }
 
 // 법안 목록 렌더링
-function renderBillList(bills) {
-    const billTableBody = document.getElementById('billTableBody');
-    billTableBody.innerHTML = '';
+function renderBills(bills) {
+    console.log(`법안 렌더링 시작: ${bills.length}개 법안`);
+    
+    const billGrid = document.getElementById('billGrid');
+    if (!billGrid) {
+        console.error('billGrid 요소를 찾을 수 없습니다.');
+        return;
+    }
+    billGrid.innerHTML = '';
     
     if (bills.length === 0) {
-        billTableBody.innerHTML = `<tr><td colspan="5" class="text-center py-3">등록된 보고서가 없습니다.</td></tr>`;
+        console.log('렌더링할 법안이 없습니다.');
+        billGrid.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">등록된 법안이 없습니다.</p></div>';
         return;
     }
     
-    bills.forEach(bill => {
-        // 날짜 형식 변경: YYYY-MM-DD
-        const formattedDate = new Date(bill.created_at).toISOString().split('T')[0];
+    // 법안 카드 정렬
+    const sortedBills = [...bills].sort((a, b) => {
+        return new Date(b.created_at) - new Date(a.created_at);
+    });
+    
+    console.log(`법안 정렬 완료: 최신 법안 - ${sortedBills[0].bill_name}`);
+    
+    // 법안 카드 생성
+    sortedBills.forEach((bill, index) => {
+        // 날짜 포맷팅
+        const createdDate = new Date(bill.created_at);
+        const formattedDate = `${createdDate.getFullYear()}-${String(createdDate.getMonth() + 1).padStart(2, '0')}-${String(createdDate.getDate()).padStart(2, '0')}`;
         
-        // 위원회와 담당자에 기본값 설정
-        const committee = bill.committee || '미지정';
-        const writer = bill.writer || '미지정';
+        // 설명 텍스트 준비 (HTML 태그 제거 및 길이 제한)
+        let descriptionText = '';
+        if (bill.description) {
+            // HTML 태그 제거
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = bill.description;
+            descriptionText = tempDiv.textContent || tempDiv.innerText || '';
+            // 길이 제한 (100자)
+            descriptionText = descriptionText.substring(0, 100) + (descriptionText.length > 100 ? '...' : '');
+        }
         
-        // 관리자 여부 확인을 위한 변수
-        const isAdmin = checkIfAdmin();
-        
-        // 모바일 친화적인 테이블 행 생성
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>
-                <span class="bill-title fw-medium" data-id="${bill.id}">${bill.bill_name}</span>
-                <div class="d-block d-md-none small text-muted mt-1">
-                    <span class="me-2"><i class="bi bi-folder2"></i> ${committee}</span>
-                    <span class="me-2"><i class="bi bi-person"></i> ${writer}</span>
-                    <span><i class="bi bi-calendar3"></i> ${formattedDate}</span>
+        // 카드 생성
+        const cardCol = document.createElement('div');
+        cardCol.className = 'col-md-6 col-lg-4 mb-4';
+        cardCol.innerHTML = `
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <a href="#" class="text-decoration-none bill-title" data-id="${bill.id}">${bill.bill_name}</a>
+                    </h5>
+                    <p class="card-text small text-muted mb-2">
+                        ${bill.committee ? `<span class="badge rounded-pill bg-light text-dark border me-2">${bill.committee}</span>` : ''}
+                        <span>제안자: ${bill.writer || '미지정'}</span>
+                    </p>
+                    <p class="card-text description-text">${descriptionText || '내용 없음'}</p>
                 </div>
-            </td>
-            <td class="d-none d-md-table-cell">${committee}</td>
-            <td class="d-none d-md-table-cell">${writer}</td>
-            <td class="d-none d-md-table-cell">${formattedDate}</td>
-            <td class="text-end">
-                <div class="btn-group btn-group-sm">
-                    ${isAdmin ? `
-                        <button class="btn btn-outline-primary edit-btn" data-id="${bill.id}">
-                            <i class="bi bi-pencil"></i><span class="d-none d-sm-inline"> 수정</span>
+                <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+                    <small class="text-muted">${formattedDate}</small>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary view-btn" data-id="${bill.id}">
+                            <i class="bi bi-eye"></i><span class="d-none d-md-inline ms-1">보기</span>
                         </button>
-                        <button class="btn btn-outline-danger delete-btn" data-id="${bill.id}">
-                            <i class="bi bi-trash"></i><span class="d-none d-sm-inline"> 삭제</span>
+                        <button class="btn btn-outline-primary edit-btn admin-only ${!checkIfAdmin() ? 'd-none' : ''}" data-id="${bill.id}">
+                            <i class="bi bi-pencil"></i><span class="d-none d-md-inline ms-1">수정</span>
                         </button>
-                    ` : ''}
+                        <button class="btn btn-outline-danger delete-btn admin-only ${!checkIfAdmin() ? 'd-none' : ''}" data-id="${bill.id}">
+                            <i class="bi bi-trash"></i><span class="d-none d-md-inline ms-1">삭제</span>
+                        </button>
+                    </div>
                 </div>
-            </td>
+            </div>
         `;
-        billTableBody.appendChild(row);
+        billGrid.appendChild(cardCol);
+        
+        if (index === 0 || index === sortedBills.length - 1) {
+            console.log(`법안 카드 렌더링: ${index === 0 ? '첫번째' : '마지막'} - ${bill.bill_name}`);
+        }
     });
     
-    // 법안명 클릭 이벤트 리스너 추가
-    document.querySelectorAll('.bill-title').forEach(title => {
-        title.addEventListener('click', function() {
-            viewBillDetails(this.dataset.id);
+    // 이벤트 핸들러 연결
+    billGrid.querySelectorAll('.bill-title, .view-btn').forEach(el => {
+        el.addEventListener('click', function(e) {
+            e.preventDefault();
+            const billId = this.dataset.id;
+            console.log(`법안 보기 클릭: ID ${billId}`);
+            viewBillDetails(billId);
         });
     });
     
-    // 수정 버튼 이벤트 리스너 추가 (관리자용)
-    if (document.querySelectorAll('.edit-btn').length > 0) {
-        document.querySelectorAll('.edit-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                editBill(this.dataset.id);
-            });
+    billGrid.querySelectorAll('.edit-btn').forEach(el => {
+        el.addEventListener('click', function(e) {
+            e.preventDefault();
+            const billId = this.dataset.id;
+            console.log(`법안 수정 클릭: ID ${billId}`);
+            editBill(billId);
         });
-    }
+    });
     
-    // 삭제 버튼 이벤트 리스너 추가 (관리자용)
-    if (document.querySelectorAll('.delete-btn').length > 0) {
-        document.querySelectorAll('.delete-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                deleteBill(this.dataset.id);
-            });
+    billGrid.querySelectorAll('.delete-btn').forEach(el => {
+        el.addEventListener('click', function(e) {
+            e.preventDefault();
+            const billId = this.dataset.id;
+            console.log(`법안 삭제 클릭: ID ${billId}`);
+            deleteBill(billId);
         });
-    }
+    });
+    
+    console.log('법안 렌더링 완료');
 }
 
 // 법안 상세 정보 표시
@@ -545,6 +578,8 @@ async function openEditModal(id) {
 // 법안 수정 폼 표시
 async function editBill(billId) {
     try {
+        console.log(`법안 ID ${billId} 수정 시작`);
+        
         // 법안 데이터 가져오기
         const { data: bill, error } = await supabaseClient
             .from('bill')
@@ -558,6 +593,16 @@ async function editBill(billId) {
             showAlert('법안을 찾을 수 없습니다.', 'danger');
             return;
         }
+        
+        console.log('수정할 법안 데이터:', {
+            id: bill.id,
+            bill_name: bill.bill_name,
+            writer: bill.writer,
+            committee: bill.committee,
+            description_length: bill.description ? bill.description.length : 0,
+            has_markdown: !!bill.description_markdown,
+            markdown_length: bill.description_markdown ? bill.description_markdown.length : 0
+        });
         
         // 현재 편집 중인 ID 저장
         currentEditingId = billId;
@@ -580,13 +625,19 @@ async function editBill(billId) {
         if (markdownField) {
             // description_markdown이 있으면 그것을 사용
             if (bill.description_markdown) {
-                console.log('마크다운 원본 데이터 사용:', bill.description_markdown.substring(0, 30) + '...');
+                console.log('[editBill] 마크다운 원본 데이터 사용:');
+                console.log('- 마크다운 데이터 길이:', bill.description_markdown.length);
+                console.log('- 마크다운 데이터 샘플:', bill.description_markdown.substring(0, 100) + '...');
                 markdownField.value = bill.description_markdown;
             } 
             // 없으면 HTML을 마크다운으로 변환
             else if (bill.description) {
-                console.log('HTML을 마크다운으로 변환:', bill.description.substring(0, 30) + '...');
-                markdownField.value = convertHtmlToMarkdown(bill.description);
+                console.log('[editBill] HTML을 마크다운으로 변환:');
+                console.log('- HTML 데이터 길이:', bill.description.length);
+                console.log('- HTML 데이터 샘플:', bill.description.substring(0, 100) + '...');
+                const convertedMarkdown = convertHtmlToMarkdown(bill.description);
+                console.log('- 변환된 마크다운 길이:', convertedMarkdown.length);
+                markdownField.value = convertedMarkdown;
             }
         }
         
@@ -697,21 +748,25 @@ function handleFormSubmit(event) {
     if (isMarkdownTabActive) {
         // 마크다운 탭이 활성화된 경우
         const markdownContent = document.getElementById('billMarkdownContent').value;
-        console.log('마크다운 입력 내용 길이:', markdownContent ? markdownContent.length : 0);
+        console.log('[마크다운] 입력 내용 길이:', markdownContent ? markdownContent.length : 0);
+        console.log('[마크다운] 원본 데이터 샘플:', markdownContent ? markdownContent.substring(0, 100) + '...' : '없음');
         
         // 마크다운 원본 저장
         billData.description_markdown = markdownContent;
         
         // HTML로 변환하여 description에도 저장
         billData.description = convertMarkdownToHtml(markdownContent);
+        console.log('[마크다운] HTML 변환 결과 길이:', billData.description ? billData.description.length : 0);
     } else {
         // HTML 탭이 활성화된 경우 (기본값)
         billData.description = document.getElementById('billContent').value;
-        console.log('HTML 입력 내용 길이:', billData.description ? billData.description.length : 0);
+        console.log('[HTML] 입력 내용 길이:', billData.description ? billData.description.length : 0);
+        // description_markdown 필드는 설정하지 않음
+        console.log('[HTML] description_markdown 필드는 설정하지 않음');
     }
     
-    // 콘텐츠 로깅
-    console.log('저장할 데이터:', billData);
+    console.log('저장할 데이터 필드:', Object.keys(billData).join(', '));
+    console.log('description_markdown 필드 존재 여부:', billData.hasOwnProperty('description_markdown'));
     
     // 기존 데이터 수정 또는 새 데이터 추가
     if (currentEditingId) {
@@ -807,7 +862,7 @@ async function searchBills(searchTerm) {
             return;
         }
         
-        renderBillList(bills);
+        renderBills(bills);
     } catch (error) {
         console.error('법안 검색 오류:', error);
         showAlert('검색 중 오류가 발생했습니다.', 'danger');
@@ -1302,10 +1357,10 @@ function filterBillsByCommittee(committee) {
     // 선택된 상임위 링크에 active 클래스 추가
     if (committee) {
         document.querySelector(`.committee-nav .nav-link[data-committee="${committee}"]`).classList.add('active');
-        renderBillList(bills.filter(bill => bill.committee === committee));
+        renderBills(bills.filter(bill => bill.committee === committee));
     } else {
         document.querySelector('.committee-nav .nav-link[data-committee="all"]').classList.add('active');
-        renderBillList(bills);
+        renderBills(bills);
     }
 }
 
@@ -1545,5 +1600,73 @@ async function createBill(billData) {
             submitBtn.disabled = false;
             submitBtn.textContent = '저장';
         }
+    }
+}
+
+// 법안 목록 가져오기
+async function getBills(isFilterActive = false) {
+    try {
+        console.log('법안 목록 가져오기 시작 (필터 활성화:', isFilterActive, ')');
+        
+        // 게시 중임을 표시
+        document.getElementById('loadingIndicator').style.display = 'block';
+        document.getElementById('billGrid').innerHTML = '';
+        
+        let query = supabaseClient
+            .from('bill')
+            .select('*')
+            .order('created_at', { ascending: false });
+            
+        // 필터 옵션 적용
+        if (isFilterActive) {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            const committeeFilter = document.getElementById('committeeFilter').value;
+            
+            console.log('검색 필터:', { searchTerm, committeeFilter });
+            
+            if (searchTerm) {
+                // 검색어로 필터링
+                query = query.or(`bill_name.ilike.%${searchTerm}%,writer.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+            }
+            
+            if (committeeFilter && committeeFilter !== '전체') {
+                // 상임위로 필터링
+                query = query.eq('committee', committeeFilter);
+            }
+        }
+
+        // 데이터 가져오기
+        const { data: bills, error } = await query;
+        
+        if (error) throw error;
+        
+        console.log(`${bills.length}개의 법안 데이터 로드 완료`);
+        
+        // 데이터 샘플 로깅 (첫 번째 항목)
+        if (bills.length > 0) {
+            const sampleBill = bills[0];
+            console.log('첫 번째 법안 데이터 샘플:', {
+                id: sampleBill.id,
+                bill_name: sampleBill.bill_name,
+                writer: sampleBill.writer,
+                committee: sampleBill.committee,
+                description_length: sampleBill.description ? sampleBill.description.length : 0,
+                has_markdown: !!sampleBill.description_markdown,
+                markdown_length: sampleBill.description_markdown ? sampleBill.description_markdown.length : 0
+            });
+        }
+        
+        // 법안 목록 렌더링
+        renderBills(bills);
+        
+        // 로딩 표시 숨기기
+        document.getElementById('loadingIndicator').style.display = 'none';
+        
+        return bills;
+    } catch (error) {
+        console.error('법안 목록 가져오기 오류:', error);
+        showAlert('법안 정보를 불러오는 중 오류가 발생했습니다.', 'danger');
+        document.getElementById('loadingIndicator').style.display = 'none';
+        return [];
     }
 } 
