@@ -15,8 +15,18 @@
     <!-- Supabase 클라이언트 라이브러리 - 최신 버전 사용 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.5/dist/umd/supabase.min.js"></script>
     
+    <!-- Noto Sans KR 웹폰트 추가 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    
     <!-- 안드로이드 모바일 기기 모달 텍스트 렌더링 문제 해결을 위한 CSS -->
     <style>
+        /* 글꼴 설정 */
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        
         /* 모바일 최적화를 위한 여백 조정 */
         @media (max-width: 768px) {
             .container {
@@ -40,6 +50,20 @@
             
             .btn-sm {
                 padding: 0.25rem 0.4rem;
+            }
+            
+            /* 모바일에서 검색 필드와 버튼 정렬 */
+            .input-group, .header-btn-container {
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+            
+            #searchInput, #searchBtn, .header-btn-container .btn {
+                height: 38px;
+            }
+            
+            .header-btn-container .btn {
+                flex: 1;
             }
             
             /* 테이블 간 여백 제거 */
@@ -322,23 +346,106 @@
             font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif !important;
         }
         
-        /* 헤더 버튼 스타일 통일 */
-        .header-btn-container {
+        /* 헤더 스타일 */
+        .header-search-container {
             display: flex;
-            gap: 8px;
+            align-items: center;
         }
         
+        /* 검색 필드와 버튼 정렬 */
+        #searchInput, 
+        #searchBtn, 
         .header-btn-container .btn {
             height: 38px;
+            line-height: 1.5;
+            vertical-align: middle;
+            box-shadow: none;
+        }
+        
+        /* 작은 버튼 스타일 수정 */
+        .btn-sm {
+            padding: 0.25rem 0.5rem !important;
+            font-size: 0.75rem !important;
+            height: 31px !important;
+            line-height: 1.5 !important;
+            border-radius: 0.2rem !important;
+        }
+        
+        /* 헤더의 작은 버튼 스타일 */
+        .header-btn-container .btn-sm {
+            height: 31px !important;
+            width: 31px !important;
+            padding: 0 !important;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.875rem;
+            position: relative;
+        }
+        
+        /* 버튼 내 아이콘 정확한 중앙 배치 */
+        .header-btn-container .btn-sm i.bi {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1rem;
+            line-height: 1;
+        }
+        
+        /* 아웃라인 버튼 스타일 수정 */
+        .btn-outline-light {
+            color: #f8f9fa !important;
+            border-color: #f8f9fa !important;
+            background-color: transparent !important;
+        }
+        
+        .btn-outline-light:hover, .btn-outline-light:focus {
+            color: #fff !important;
+            background-color: rgba(255, 255, 255, 0.2) !important;
+            border-color: #f8f9fa !important;
+        }
+        
+        /* 헤더 버튼 hover 효과 */
+        .header-btn-container .btn-outline-light:hover {
+            background-color: rgba(255, 255, 255, 0.2) !important;
+            color: #fff !important;
+        }
+        
+        /* 입력 필드 포커스 시 그림자 제거 */
+        #searchInput:focus {
+            box-shadow: none;
+            border-color: #ced4da;
+        }
+        
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .header-btn-container {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .header-btn-container .btn,
+        .btn-light {
+            display: flex;
+            align-items: center;
+            justify-content: center;
             padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
         }
         
         .header-btn-container .btn-outline-light:hover {
             background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* 입력 그룹 스타일 */
+        .input-group {
+            display: flex;
+            align-items: stretch;
         }
     </style>
 </head>
@@ -347,20 +454,24 @@
     <header class="bg-dark text-white py-3 shadow-sm">
         <div class="container">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
-                <h1 class="mb-2 mb-md-0 fs-3 text-center text-md-start">법률안 분석 리포트</h1>
+                <h1 class="mb-2 mb-md-0 fs-3 text-center text-md-start fw-bold" style="font-family: 'Noto Sans KR', sans-serif;">
+                    <a href="index.html" class="text-white text-decoration-none">법률안 분석 리포트</a>
+                </h1>
                 <div class="d-flex flex-column flex-md-row align-items-center">
-                    <div class="input-group mb-2 mb-md-0 me-md-3" style="max-width: 200px;">
-                        <input type="text" id="searchInput" class="form-control" placeholder="법안 검색...">
-                        <button class="btn btn-light" type="button" id="searchBtn">
-                            <i class="bi bi-search"></i>
-                        </button>
+                    <div class="header-search-container mb-2 mb-md-0 me-md-3">
+                        <div class="input-group" style="max-width: 200px;">
+                            <input type="text" id="searchInput" class="form-control" placeholder="법안 검색...">
+                            <button class="btn btn-light" type="button" id="searchBtn">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="header-btn-container">
-                        <a href="feedback.html" class="btn btn-outline-light">
-                            <i class="bi bi-chat-dots-fill me-1"></i>피드백 제출
+                        <a href="feedback.html" class="btn btn-outline-light btn-sm">
+                            <i class="bi bi-chat-dots-fill me-1"></i>
                         </a>
-                        <a href="admin.html" class="btn btn-outline-light">
-                            <i class="bi bi-gear-fill me-1"></i>관리자
+                        <a href="admin.html" class="btn btn-outline-light btn-sm">
+                            <i class="bi bi-gear-fill me-1"></i>
                         </a>
                     </div>
                 </div>
@@ -399,7 +510,7 @@
                 <!-- 법안 목록 테이블 -->
                 <div class="card shadow-sm mb-4">
                     <div class="card-header bg-primary text-white">
-                        <h3 class="fs-5 mb-0">법안 분석 보고서</h3>
+                        <h3 class="fs-5 mb-0 fw-bold">법안 분석 보고서</h3>
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
@@ -418,7 +529,7 @@
                 <!-- 최근 법안 카드 -->
                 <div class="card shadow-sm mb-4">
                     <div class="card-header bg-warning text-white">
-                        <h3 class="fs-5 mb-0">최근 등록 법안</h3>
+                        <h3 class="fs-5 mb-0 fw-bold">최근 등록 법안</h3>
                     </div>
                     <div class="card-body p-0">
                         <ul class="list-group list-group-flush" id="recentBillsList">
@@ -430,7 +541,7 @@
                 <!-- 통계 카드 -->
                 <div class="card shadow-sm mb-4">
                     <div class="card-header bg-info text-white">
-                        <h3 class="fs-5 mb-0">통계</h3>
+                        <h3 class="fs-5 mb-0 fw-bold">통계</h3>
                     </div>
                     <div class="card-body">
                         <div class="row text-center">
