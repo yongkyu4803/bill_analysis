@@ -866,8 +866,8 @@ function viewBillDetails(bill) {
             // 로딩 표시 숨기기
             modalElement.querySelector('.loading-spinner').style.display = 'none';
             
-            // 법안 내용 가져오기
-            const content = bill.description || '';
+            // 법안 내용 가져오기 - 마크다운 우선, 없으면 일반 설명
+            const content = bill.description_markdown || bill.description || '';
             
             // HTML 정제
             const sanitizedHTML = sanitizeHtml(content);
@@ -1015,8 +1015,8 @@ function showAnalysisReport(report) {
             // 로딩 표시 숨기기
             modalElement.querySelector('.loading-spinner').style.display = 'none';
             
-            // 보고서 내용 가져오기
-            const content = report.content || '';
+            // 보고서 내용 가져오기 - 마크다운 우선, 없으면 일반 설명
+            const content = report.description_markdown || report.description || '';
             
             // HTML 정제
             const sanitizedHTML = sanitizeHtml(content);
