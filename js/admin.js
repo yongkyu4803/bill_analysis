@@ -51,9 +51,9 @@ async function checkSession() {
   }
 }
 
-// 로그인된 사용자용 UI 업데이트
+// 인증된 사용자용 UI 업데이트
 function updateUIForAuthenticatedUser(user) {
-  // 로그인 버튼 텍스트 변경
+  // 로그인 버튼 텍스트 설정
   const loginBtn = document.getElementById('loginBtn');
   loginBtn.innerHTML = '<i class="bi bi-box-arrow-right me-1"></i>로그아웃';
   loginBtn.classList.remove('btn-outline-light');
@@ -62,29 +62,19 @@ function updateUIForAuthenticatedUser(user) {
   // 관리자 정보 표시
   const adminInfo = document.getElementById('adminInfo');
   adminInfo.innerHTML = `
-    <div class="d-flex align-items-center mb-2">
-      <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px;">
-        <i class="bi bi-person-fill"></i>
-      </div>
-      <div>
-        <p class="mb-0 fw-bold">${user.email}</p>
-        <small class="text-muted">관리자</small>
-      </div>
-    </div>
-    <div class="d-grid gap-2 mt-3">
-      <button class="btn btn-sm btn-outline-secondary" id="refreshBtn">
-        <i class="bi bi-arrow-clockwise me-1"></i>새로고침
-      </button>
-    </div>
+    <p class="mb-1"><strong>이메일:</strong> ${user.email}</p>
+    <p class="mb-1"><strong>역할:</strong> 관리자</p>
+    <small class="text-success">로그인 됨</small>
   `;
   
-  // 폼 등록 버튼 활성화
+  // 등록 폼 활성화
   document.getElementById('showFormBtn').disabled = false;
   
-  // 새로고침 버튼 이벤트 추가
-  document.getElementById('refreshBtn').addEventListener('click', function() {
-    loadBills();
-  });
+  // 방문자 통계 로드
+  loadVisitStatistics();
+  
+  // 법안 목록 로드
+  loadBills();
 }
 
 // 인증되지 않은 사용자용 UI 업데이트
@@ -795,4 +785,90 @@ function showAlert(type, message, duration = 5000) {
       setTimeout(() => alert.remove(), 150);
     }
   }, duration);
+}
+
+// 방문자 통계 로드 함수
+async function loadVisitStatistics() {
+  try {
+    // 오늘 날짜
+    const today = new Date().toISOString().split('T')[0];
+    
+    // 오늘 방문자 수 조회
+    const { data: todayData, error: todayError } = await supabaseClient
+      .from('visits')
+      .select('count')
+      .eq('visit_date', today)
+      .single();
+    
+    if (todayError && todayError.code !== 'PGRST116') {
+      console.error('오늘 방문자 조회 오류:', todayError);
+    }
+    
+    // 전체 방문자 수 조회
+    const { data: allData, error: allError } = await supabaseClient
+      .from('visits')
+      .select('count, visit_date')
+      .order('visit_date', { ascending: true });
+    
+    if (allError) {
+      console.error('전체 방문자 조회 오류:', allError);
+    }
+    
+    // UI 업데이트
+    const todayVisitsElem = document.getElementById('todayVisits');
+    const totalVisitsElem = document.getElementById('totalVisits');
+    
+    if (todayVisitsElem) {
+      todayVisitsElem.textContent = todayData ? todayData.count : 0;
+    }
+    
+    if (totalVisitsElem && allData) {
+      const totalCount = allData.reduce((sum, item) => sum + item.count, 0);
+      totalVisitsElem.textContent = totalCount;
+    }
+    
+    // 방문자 차트 그리기 (최근 7일)
+    if (allData && allData.length > 0) {
+      drawVisitsChart(allData);
+    }
+    
+  } catch (error) {
+    console.error('방문 통계 로드 중 오류 발생:', error);
+  }
+}
+
+// 방문자 차트 그리기 함수
+function drawVisitsChart(visitsData) {
+  // 최근 7일 데이터만 추출
+  const recentData = visitsData.slice(-7);
+  
+  // 차트 컨테이너
+  const chartContainer = document.getElementById('visitsChart');
+  if (!chartContainer) return;
+  
+  // 간단한 차트 HTML 생성
+  let chartHTML = '<div class="mt-3 small">';
+  chartHTML += '<p class="text-muted mb-2">최근 7일 방문자 통계</p>';
+  
+  recentData.forEach(visit => {
+    const date = new Date(visit.visit_date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+    const maxCount = Math.max(...recentData.map(item => item.count));
+    const percentage = Math.round((visit.count / maxCount) * 100);
+    
+    chartHTML += `
+      <div class="mb-2">
+        <div class="d-flex justify-content-between mb-1">
+          <span>${date}</span>
+          <span class="text-primary">${visit.count}명</span>
+        </div>
+        <div class="progress" style="height: 8px;">
+          <div class="progress-bar bg-info" role="progressbar" style="width: ${percentage}%" 
+               aria-valuenow="${percentage}" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+      </div>
+    `;
+  });
+  
+  chartHTML += '</div>';
+  chartContainer.innerHTML = chartHTML;
 } 

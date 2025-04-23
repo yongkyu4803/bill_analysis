@@ -60,16 +60,17 @@ document.addEventListener('DOMContentLoaded', async function() {
 async function recordVisit() {
   try {
     // 현재 날짜 (YYYY-MM-DD 형식)
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date();
+    const dateStr = today.toISOString().split('T')[0];
     
     // visits 테이블에서 오늘 데이터 확인
     const { data: existingVisit, error: selectError } = await supabaseClient
       .from('visits')
       .select('*')
-      .eq('visit_date', today)
-      .single();
+      .eq('visit_date', dateStr)
+      .maybeSingle();
     
-    if (selectError && selectError.code !== 'PGRST116') { // PGRST116: 결과 없음
+    if (selectError && selectError.code !== 'PGRST116') {
       console.error('방문자 데이터 조회 오류:', selectError);
       return;
     }
@@ -78,8 +79,11 @@ async function recordVisit() {
       // 오늘 데이터가 있으면 카운트 증가
       const { error: updateError } = await supabaseClient
         .from('visits')
-        .update({ count: existingVisit.count + 1 })
-        .eq('visit_date', today);
+        .update({ 
+          count: existingVisit.count + 1,
+          updated_at: today.toISOString()
+        })
+        .eq('visit_date', dateStr);
       
       if (updateError) {
         console.error('방문자 카운트 업데이트 오류:', updateError);
@@ -88,7 +92,12 @@ async function recordVisit() {
       // 오늘 데이터가 없으면 새로 생성
       const { error: insertError } = await supabaseClient
         .from('visits')
-        .insert([{ visit_date: today, count: 1 }]);
+        .insert([{ 
+          visit_date: dateStr,
+          count: 1,
+          created_at: today.toISOString(),
+          updated_at: today.toISOString()
+        }]);
       
       if (insertError) {
         console.error('방문자 데이터 생성 오류:', insertError);
