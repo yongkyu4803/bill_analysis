@@ -1378,13 +1378,6 @@ async function updateBill(id, billData) {
             submitBtn.textContent = '수정 중...';
         }
 
-        // 마크다운 내용이 있으면 description_markdown 필드에도 저장
-        if (billData.description && !billData.description_markdown) {
-            billData.description_markdown = billData.description;
-        } else if (billData.description_markdown && !billData.description) {
-            billData.description = billData.description_markdown;
-        }
-
         // 기존 법안 수정
         const result = await supabaseClient
             .from('bill')
@@ -1522,13 +1515,6 @@ async function createBill(billData) {
         if (submitBtn) {
             submitBtn.disabled = true;
             submitBtn.textContent = '저장 중...';
-        }
-        
-        // 마크다운 내용이 있으면 description_markdown 필드에도 저장
-        if (billData.description && !billData.description_markdown) {
-            billData.description_markdown = billData.description;
-        } else if (billData.description_markdown && !billData.description) {
-            billData.description = billData.description_markdown;
         }
         
         // 법안 데이터 저장
