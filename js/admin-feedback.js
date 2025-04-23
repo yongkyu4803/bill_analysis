@@ -1,13 +1,14 @@
-// Supabase 클라이언트 초기화
-const supabaseUrl = 'https://rxwztfdnragffxbmlscf.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4d3p0ZmRucmFnZmZ4Ym1sc2NmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI0NzU2MDgsImV4cCI6MjA1ODA1MTYwOH0.KN8cR6_xHHHfuF1odUi9WwzkbOHCmwuRaK0FYe7b0Ig';
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+// admin.js에서 초기화된 supabaseClient를 사용
 
 // 전역 변수
 let feedbacks = [];
 let currentPage = 1;
 const PAGE_SIZE = 10;
 let currentFeedback = null;
+let currentFilters = {
+    status: 'all',
+    type: 'all'
+};
 
 // DOM 로드 시 실행
 document.addEventListener('DOMContentLoaded', async function() {
@@ -113,7 +114,9 @@ async function handleLogin(e) {
 // 피드백 관리 UI 표시 함수
 function showFeedbackManagement() {
     const mainContainer = document.getElementById('mainContainer');
-    const managementUI = `
+    if (!mainContainer) return;
+
+    mainContainer.innerHTML = `
         <div class="row mb-4">
             <div class="col-md-6">
                 <h2 class="fs-4">피드백 관리</h2>
@@ -140,6 +143,30 @@ function showFeedbackManagement() {
                 <button id="logoutBtn" class="btn btn-outline-danger btn-sm ms-2">
                     <i class="bi bi-box-arrow-right me-1"></i> 로그아웃
                 </button>
+            </div>
+        </div>
+
+        <!-- 통계 영역 -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">피드백 현황</h5>
+                        <p class="mb-2">전체 피드백: <span id="totalFeedbackCount">0</span>건</p>
+                        <p class="mb-0">미처리 피드백: <span id="pendingFeedbackCount">0</span>건</p>
+                        <span id="newFeedbackBadge" class="badge bg-danger" style="display: none;">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">유형별 통계</h5>
+                        <div id="feedbackTypeChart">
+                            <!-- 차트가 동적으로 로드됩니다 -->
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -173,8 +200,6 @@ function showFeedbackManagement() {
             </div>
         </div>
     `;
-    
-    mainContainer.innerHTML = managementUI;
 }
 
 // 이벤트 리스너 설정 함수
@@ -204,98 +229,45 @@ async function handleLogout() {
 // 피드백 목록 로드 함수
 async function loadFeedbacks() {
     try {
-        const statusFilter = document.getElementById('filterStatus')?.value || 'all';
-        const typeFilter = document.getElementById('filterType')?.value || 'all';
-        
-        // 피드백 목록 로드
         let query = supabaseClient
             .from('feedback')
             .select('*')
             .order('created_at', { ascending: false });
-        
-        // 필터링 적용
-        if (statusFilter !== 'all') {
-            query = query.eq('status', statusFilter);
+
+        // 필터 적용
+        if (currentFilters.status !== 'all') {
+            query = query.eq('status', currentFilters.status);
         }
-        
-        if (typeFilter !== 'all') {
-            query = query.eq('type', typeFilter);
+        if (currentFilters.type !== 'all') {
+            query = query.eq('type', currentFilters.type);
         }
-        
-        const { data, error } = await query;
-        
+
+        const { data: feedbackData, error } = await query;
+
         if (error) throw error;
-        
-        feedbacks = data || [];
-        
-        // 페이지네이션 설정
-        setupPagination(feedbacks.length);
-        
-        // 현재 페이지의 피드백 표시
-        renderFeedbacks(paginate(feedbacks, currentPage, PAGE_SIZE));
+
+        feedbacks = feedbackData;
+        renderFeedbacks();
+        updateFeedbackStats();
         
     } catch (error) {
-        console.error('피드백 목록 로드 오류:', error);
-        showAlert('danger', '피드백 목록을 불러오는데 실패했습니다.');
+        console.error('피드백 로드 오류:', error);
+        showAlert('danger', '피드백 목록을 불러오는 중 오류가 발생했습니다.');
     }
 }
 
-// 페이지네이션 설정 함수
-function setupPagination(totalItems) {
-    const totalPages = Math.ceil(totalItems / PAGE_SIZE);
-    const pagination = document.getElementById('pagination');
-    
-    if (!pagination) return;
-    
-    pagination.innerHTML = '';
-    
-    // 이전 버튼
-    const prevLi = document.createElement('li');
-    prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
-    prevLi.innerHTML = `<a class="page-link" href="#" data-page="${currentPage - 1}" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a>`;
-    pagination.appendChild(prevLi);
-    
-    // 페이지 번호
-    for (let i = 1; i <= totalPages; i++) {
-        const li = document.createElement('li');
-        li.className = `page-item ${i === currentPage ? 'active' : ''}`;
-        li.innerHTML = `<a class="page-link" href="#" data-page="${i}">${i}</a>`;
-        pagination.appendChild(li);
-    }
-    
-    // 다음 버튼
-    const nextLi = document.createElement('li');
-    nextLi.className = `page-item ${currentPage === totalPages || totalPages === 0 ? 'disabled' : ''}`;
-    nextLi.innerHTML = `<a class="page-link" href="#" data-page="${currentPage + 1}" aria-label="Next"><span aria-hidden="true">&raquo;</span></a>`;
-    pagination.appendChild(nextLi);
-    
-    // 페이지 클릭 이벤트
-    pagination.querySelectorAll('.page-link').forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            if (!this.parentElement.classList.contains('disabled') && !this.parentElement.classList.contains('active')) {
-                currentPage = parseInt(this.dataset.page);
-                loadFeedbacks();
-            }
-        });
-    });
-}
-
-// 페이지네이션 함수
-function paginate(items, currentPage, pageSize) {
-    const startIndex = (currentPage - 1) * pageSize;
-    return items.slice(startIndex, startIndex + pageSize);
-}
-
-// 피드백 렌더링 함수
-function renderFeedbacks(feedbacksData) {
+// 피드백 목록 렌더링
+function renderFeedbacks() {
     const tableBody = document.getElementById('feedbackTableBody');
-    
     if (!tableBody) return;
-    
+
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
+    const endIndex = startIndex + PAGE_SIZE;
+    const pageData = feedbacks.slice(startIndex, endIndex);
+
     tableBody.innerHTML = '';
-    
-    if (feedbacksData.length === 0) {
+
+    if (pageData.length === 0) {
         tableBody.innerHTML = `
             <tr>
                 <td colspan="7" class="text-center py-3">등록된 피드백이 없습니다.</td>
@@ -303,8 +275,8 @@ function renderFeedbacks(feedbacksData) {
         `;
         return;
     }
-    
-    feedbacksData.forEach(feedback => {
+
+    pageData.forEach(feedback => {
         const row = document.createElement('tr');
         
         // 뱃지 색상 설정
@@ -314,7 +286,6 @@ function renderFeedbacks(feedbacksData) {
             case '오류신고': badgeClass = 'bg-danger'; break;
             case '칭찬': badgeClass = 'bg-success'; break;
             case '제안': badgeClass = 'bg-info'; break;
-            case '기타': badgeClass = 'bg-secondary'; break;
         }
         
         // 상태에 따른 뱃지 설정
@@ -325,21 +296,13 @@ function renderFeedbacks(feedbacksData) {
             case '완료': statusBadge = '<span class="badge bg-success">완료</span>'; break;
             default: statusBadge = '<span class="badge bg-secondary">대기중</span>';
         }
-        
-        // 익명 여부에 따른 작성자 표시
+
+        // 작성자 표시 처리
         let writerDisplay = feedback.is_anonymous ? '익명' : (feedback.writer || '익명');
-        
-        // 관리자에게는 익명 사용자의 실제 정보도 보이도록 표시
         if (feedback.is_anonymous && feedback.writer) {
             writerDisplay = `익명 (${feedback.writer})`;
         }
-        
-        // 이메일 표시
-        if (feedback.email) {
-            writerDisplay += `<br><small class="text-muted">${feedback.email}</small>`;
-        }
-        
-        // 행 내용 설정
+
         row.innerHTML = `
             <td>${feedback.id}</td>
             <td><span class="badge ${badgeClass}">${feedback.type}</span></td>
@@ -353,194 +316,259 @@ function renderFeedbacks(feedbacksData) {
                 </button>
             </td>
         `;
-        
+
         // 상세보기 버튼 이벤트
         row.querySelector('.view-btn').addEventListener('click', () => showFeedbackDetail(feedback));
-        
+
         tableBody.appendChild(row);
+    });
+
+    renderPagination();
+}
+
+// 페이지네이션 렌더링
+function renderPagination() {
+    const pagination = document.getElementById('pagination');
+    if (!pagination) return;
+
+    const totalPages = Math.ceil(feedbacks.length / PAGE_SIZE);
+    
+    let paginationHTML = '';
+    
+    // 이전 페이지 버튼
+    paginationHTML += `
+        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${currentPage - 1}">이전</a>
+        </li>
+    `;
+
+    // 페이지 번호
+    for (let i = 1; i <= totalPages; i++) {
+        paginationHTML += `
+            <li class="page-item ${currentPage === i ? 'active' : ''}">
+                <a class="page-link" href="#" data-page="${i}">${i}</a>
+            </li>
+        `;
+    }
+
+    // 다음 페이지 버튼
+    paginationHTML += `
+        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${currentPage + 1}">다음</a>
+        </li>
+    `;
+
+    pagination.innerHTML = paginationHTML;
+
+    // 페이지 클릭 이벤트
+    pagination.querySelectorAll('.page-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const newPage = parseInt(e.target.dataset.page);
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                loadFeedbacks();
+            }
+        });
     });
 }
 
-// 피드백 상세보기 함수
+// 피드백 상세 정보 표시
 function showFeedbackDetail(feedback) {
     currentFeedback = feedback;
     
-    // 모달 생성
-    const modalHTML = `
-        <div class="modal fade" id="feedbackDetailModal" tabindex="-1" aria-labelledby="feedbackDetailModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="feedbackDetailModalLabel">피드백 상세보기</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    const modalBody = document.querySelector('#feedbackDetailModal .modal-body');
+    modalBody.innerHTML = `
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="badge ${getFeedbackTypeBadgeClass(feedback.type)}">${feedback.type}</span>
+                <span class="text-muted small">작성일: ${formatDate(feedback.created_at)}</span>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">${feedback.title}</h5>
+                <div class="mb-3">
+                    <strong>작성자:</strong> ${feedback.is_anonymous ? '익명' : (feedback.writer || '익명')}
+                    ${feedback.is_anonymous && feedback.writer ? `<span class="text-muted">(실제: ${feedback.writer})</span>` : ''}
+                    ${feedback.email ? `<br><strong>이메일:</strong> ${feedback.email}` : ''}
+                </div>
+                <div class="card mb-3">
+                    <div class="card-body bg-light">
+                        <p class="card-text">${feedback.content.replace(/\n/g, '<br>')}</p>
                     </div>
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <h5 id="modalTitle" class="mb-0">${feedback.title}</h5>
-                                <div>
-                                    <select id="statusSelect" class="form-select form-select-sm" style="width: auto;">
-                                        <option value="대기중" ${feedback.status === '대기중' ? 'selected' : ''}>대기중</option>
-                                        <option value="처리중" ${feedback.status === '처리중' ? 'selected' : ''}>처리중</option>
-                                        <option value="완료" ${feedback.status === '완료' ? 'selected' : ''}>완료</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="text-muted small mt-2">
-                                <span class="badge ${getBadgeClass(feedback.type)}">${feedback.type}</span>
-                                <span class="ms-2">ID: ${feedback.id}</span>
-                                <span class="ms-2">작성일: ${formatDate(feedback.created_at, true)}</span>
-                            </div>
-                            <div class="mt-2">
-                                <strong>작성자:</strong> ${feedback.is_anonymous ? '익명' : (feedback.writer || '익명')}
-                                ${feedback.is_anonymous && feedback.writer ? `<span class="text-muted">(실제: ${feedback.writer})</span>` : ''}
-                                ${feedback.email ? `<br><strong>이메일:</strong> ${feedback.email}` : ''}
-                                <br><strong>익명 여부:</strong> ${feedback.is_anonymous ? '익명' : '실명'}
-                            </div>
-                        </div>
-                        <div class="card mb-3">
-                            <div class="card-header">피드백 내용</div>
-                            <div class="card-body">
-                                <p>${feedback.content.replace(/\n/g, '<br>')}</p>
-                            </div>
-                        </div>
-                        <div class="card">
-                            <div class="card-header">답변 작성</div>
-                            <div class="card-body">
-                                <textarea id="responseText" class="form-control" rows="4" placeholder="답변을 작성해주세요...">${feedback.response || ''}</textarea>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
-                        <button type="button" id="saveResponseBtn" class="btn btn-primary">저장</button>
-                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">상태</label>
+                    <select class="form-select" id="statusSelect">
+                        <option value="대기중" ${feedback.status === '대기중' ? 'selected' : ''}>대기중</option>
+                        <option value="처리중" ${feedback.status === '처리중' ? 'selected' : ''}>처리중</option>
+                        <option value="완료" ${feedback.status === '완료' ? 'selected' : ''}>완료</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">답변</label>
+                    <textarea class="form-control" id="responseText" rows="4">${feedback.response || ''}</textarea>
+                </div>
+                <div class="text-end">
+                    <button class="btn btn-primary" id="saveResponseBtn">
+                        <i class="bi bi-check-lg me-1"></i>저장
+                    </button>
                 </div>
             </div>
         </div>
     `;
+
+    // 상태 변경 이벤트
+    document.getElementById('statusSelect').addEventListener('change', updateStatus);
     
-    // 기존 모달 제거
-    const existingModal = document.getElementById('feedbackDetailModal');
-    if (existingModal) {
-        existingModal.remove();
-    }
-    
-    // 모달 추가
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-    
-    // 모달 객체 생성 및 표시
+    // 저장 버튼 이벤트
+    document.getElementById('saveResponseBtn').addEventListener('click', saveResponse);
+
+    // 모달 표시
     const modal = new bootstrap.Modal(document.getElementById('feedbackDetailModal'));
     modal.show();
-    
-    // 저장 버튼 이벤트 리스너
-    document.getElementById('saveResponseBtn').addEventListener('click', saveResponse);
-    
-    // 상태 변경 이벤트 리스너
-    document.getElementById('statusSelect').addEventListener('change', updateStatus);
 }
 
-// 답변 저장 함수
+// 피드백 답변 저장
 async function saveResponse() {
     if (!currentFeedback) return;
-    
-    const responseText = document.getElementById('responseText').value.trim();
-    const statusSelect = document.getElementById('statusSelect');
-    const status = statusSelect.value;
-    
+
+    const response = document.getElementById('responseText').value;
+    const status = document.getElementById('statusSelect').value;
+    const responseDate = status === '완료' ? new Date().toISOString() : null;
+
     try {
-        // 답변 저장
         const { error } = await supabaseClient
             .from('feedback')
             .update({
-                response: responseText,
-                response_date: new Date().toISOString(),
-                status: status
+                response,
+                status,
+                response_date: responseDate,
+                updated_at: new Date().toISOString()
             })
             .eq('id', currentFeedback.id);
-        
+
         if (error) throw error;
-        
-        // 성공 메시지
+
         showAlert('success', '답변이 저장되었습니다.');
+        loadFeedbacks();
         
         // 모달 닫기
         const modal = bootstrap.Modal.getInstance(document.getElementById('feedbackDetailModal'));
         modal.hide();
-        
-        // 목록 새로고침
-        loadFeedbacks();
-        
+
     } catch (error) {
         console.error('답변 저장 오류:', error);
-        showAlert('danger', '답변 저장에 실패했습니다.');
+        showAlert('danger', '답변 저장 중 오류가 발생했습니다.');
     }
 }
 
-// 상태 업데이트 함수
-async function updateStatus() {
+// 피드백 상태 업데이트
+async function updateStatus(e) {
     if (!currentFeedback) return;
-    
-    const statusSelect = document.getElementById('statusSelect');
-    const status = statusSelect.value;
+
+    const newStatus = e.target.value;
     
     try {
-        // 상태 업데이트
         const { error } = await supabaseClient
             .from('feedback')
-            .update({ status })
+            .update({
+                status: newStatus,
+                updated_at: new Date().toISOString()
+            })
             .eq('id', currentFeedback.id);
-        
+
         if (error) throw error;
-        
-        // 피드백 객체 업데이트
-        currentFeedback.status = status;
-        
+
+        currentFeedback.status = newStatus;
+        showAlert('success', '상태가 업데이트되었습니다.');
+        loadFeedbacks();
+
     } catch (error) {
         console.error('상태 업데이트 오류:', error);
-        showAlert('danger', '상태 업데이트에 실패했습니다.');
-        
-        // 선택 원상복구
-        statusSelect.value = currentFeedback.status;
+        showAlert('danger', '상태 업데이트 중 오류가 발생했습니다.');
+        e.target.value = currentFeedback.status;
     }
 }
 
-// 뱃지 클래스 반환 함수
-function getBadgeClass(type) {
+// 피드백 통계 업데이트
+function updateFeedbackStats() {
+    // 전체 피드백 수
+    document.getElementById('totalFeedbackCount').textContent = feedbacks.length;
+
+    // 미처리 피드백 수
+    const pendingCount = feedbacks.filter(f => f.status === '대기중').length;
+    document.getElementById('pendingFeedbackCount').textContent = pendingCount;
+
+    // 새로운 피드백 배지 업데이트
+    const badge = document.getElementById('newFeedbackBadge');
+    if (pendingCount > 0) {
+        badge.textContent = pendingCount;
+        badge.style.display = 'inline-block';
+    } else {
+        badge.style.display = 'none';
+    }
+
+    // 유형별 통계 차트 업데이트
+    updateFeedbackTypeChart();
+}
+
+// 유형별 통계 차트 업데이트
+function updateFeedbackTypeChart() {
+    const typeStats = {};
+    feedbacks.forEach(feedback => {
+        typeStats[feedback.type] = (typeStats[feedback.type] || 0) + 1;
+    });
+
+    const chartContainer = document.getElementById('feedbackTypeChart');
+    chartContainer.innerHTML = '';
+
+    Object.entries(typeStats).forEach(([type, count]) => {
+        const percentage = (count / feedbacks.length * 100).toFixed(1);
+        const badgeClass = getFeedbackTypeBadgeClass(type);
+
+        chartContainer.innerHTML += `
+            <div class="mb-2">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="badge ${badgeClass}">${type}</span>
+                    <small>${count}건 (${percentage}%)</small>
+                </div>
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar ${badgeClass}" role="progressbar" 
+                         style="width: ${percentage}%" 
+                         aria-valuenow="${percentage}" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+}
+
+// 유틸리티 함수
+function getFeedbackTypeBadgeClass(type) {
     switch (type) {
         case '개선요청': return 'bg-primary';
         case '오류신고': return 'bg-danger';
         case '칭찬': return 'bg-success';
         case '제안': return 'bg-info';
-        case '기타': return 'bg-secondary';
         default: return 'bg-secondary';
     }
 }
 
-// 날짜 포맷 함수
-function formatDate(dateString, includeTime = false) {
-    if (!dateString) return '-';
-    
+function formatDate(dateString) {
     const date = new Date(dateString);
-    
-    if (isNaN(date.getTime())) {
-        return dateString;
-    }
-    
-    // 날짜 형식
-    const dateFormat = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
-    
-    // 시간 포함 여부
-    if (includeTime) {
-        const timeFormat = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-        return `${dateFormat} ${timeFormat}`;
-    }
-    
-    return dateFormat;
+    return new Intl.DateTimeFormat('ko-KR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    }).format(date);
 }
 
 // 알림 표시 함수
-function showAlert(type, message, duration = 5000) {
+function showAlert(type, message, duration = 3000) {
     const alertContainer = document.getElementById('alertContainer');
     const alertId = 'alert-' + Date.now();
     
@@ -555,7 +583,6 @@ function showAlert(type, message, duration = 5000) {
     
     alertContainer.appendChild(alertElement);
     
-    // 일정 시간 후 알림 자동 제거
     setTimeout(() => {
         const alert = document.getElementById(alertId);
         if (alert) {

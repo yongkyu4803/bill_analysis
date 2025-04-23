@@ -1,47 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>법안 열람</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* 모바일 모달 최적화 */
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        
+        .bill-table tbody tr {
+            cursor: pointer;
+        }
+        
+        .bill-table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        /* 모달 스타일 개선 */
+        .modal {
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .modal-content {
+            background-color: #ffffff !important;
+        }
+        
+        .modal-title, .modal-body, .modal-footer, .modal-header {
+            color: #000000 !important;
+            opacity: 1 !important;
+        }
+        
+        .modal-body * {
+            color: #000000 !important;
+            opacity: 1 !important;
+        }
+        
+        /* 탭 스타일 */
+        .nav-tabs .nav-link {
+            color: #000000 !important;
+            background-color: #f8f9fa;
+            border-color: #dee2e6 #dee2e6 #ffffff;
+            font-weight: 500;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: #000000 !important;
+            background-color: #ffffff;
+            border-color: #dee2e6 #dee2e6 #ffffff;
+            font-weight: 700;
+        }
+        
+        /* 안드로이드 최적화 */
         @media (max-width: 767.98px) {
-            .modal-dialog {
-                margin: 1rem auto;
+            .modal-body {
+                padding: 0.75rem;
             }
             
             .modal-content {
-                border-radius: 0.5rem;
-                transform: translateZ(0); /* 하드웨어 가속 활성화 */
-                -webkit-transform: translateZ(0);
-                -webkit-font-smoothing: antialiased;
-                -moz-osx-font-smoothing: grayscale;
-                background-color: #ffffff !important;
-            }
-            
-            /* 모달 내 모든 텍스트 가시성 확보 */
-            .modal-title, 
-            .modal-body, 
-            .modal-body * {
-                color: #000000 !important;
-                opacity: 1 !important;
-            }
-            
-            .modal-header {
-                border-bottom: 1px solid #dee2e6;
-                background-color: #f8f9fa;
-            }
-            
-            .modal-body {
-                padding: 1rem;
-            }
-            
-            .nav-tabs {
-                margin-bottom: 1rem;
+                margin: 0.5rem;
+                padding: 0.5rem;
             }
             
             .tab-content {
-                padding: 0.5rem;
+                padding: 0.75rem;
                 background-color: #ffffff;
                 border: 1px solid #dee2e6;
                 border-top: none;
-                border-radius: 0 0 0.25rem 0.25rem;
             }
         }
     </style>

@@ -143,149 +143,294 @@
 
     <!-- 메인 컨텐츠 영역 -->
     <main class="container my-4">
-        <div class="row">
-            <!-- 법안 목록 영역 -->
-            <div class="col-lg-8">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2 class="fs-4 mb-0">법안 분석 보고서</h2>
-                    <button id="showFormBtn" class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#formContainer">
-                        <i class="bi bi-plus-lg me-1"></i>보고서 등록
-                    </button>
-                </div>
+        <!-- 탭 네비게이션 -->
+        <ul class="nav nav-tabs mb-4">
+            <li class="nav-item">
+                <a class="nav-link active" id="bills-tab" data-bs-toggle="tab" href="#bills-content">
+                    <i class="bi bi-file-text me-1"></i>법안 관리
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="feedback-tab" data-bs-toggle="tab" href="#feedback-content">
+                    <i class="bi bi-chat-dots me-1"></i>피드백 관리
+                    <span class="badge bg-danger rounded-pill" id="newFeedbackBadge" style="display: none;">0</span>
+                </a>
+            </li>
+        </ul>
 
-                <!-- 폼 섹션 -->
-                <div class="collapse mb-4" id="formContainer">
-                    <div class="card shadow-sm">
-                        <div class="card-body">
-                            <form id="billForm">
-                                <div class="mb-3">
-                                    <label for="billTitle" class="form-label">법안명 <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="billTitle" name="billTitle" required>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="billProposer" class="form-label">담당자 <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="billProposer" name="billProposer" required>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="billCommittee" class="form-label">소관위원회</label>
-                                        <select class="form-select" id="billCommittee" name="billCommittee">
-                                            <option value="">선택...</option>
-                                            <option value="법사">법사</option>
-                                            <option value="정무">정무</option>
-                                            <option value="행안">행안</option>
-                                            <option value="문체">문체</option>
-                                            <option value="과방">과방</option>
-                                            <option value="외통">외통</option>
-                                            <option value="국토">국토</option>
-                                            <option value="기재">기재</option>
-                                            <option value="농해수">농해수</option>
-                                            <option value="산자">산자</option>
-                                            <option value="복지">복지</option>
-                                            <option value="환노">환노</option>
-                                            <option value="정보">정보</option>
-                                            <option value="여가">여가</option>
-                                            <option value="교육">교육</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                
-                                <!-- 탭 네비게이션 -->
-                                <div class="nav mb-2" role="tablist">
-                                    <button class="nav-link active" id="htmlTab" data-bs-toggle="tab" data-bs-target="#htmlContent" type="button" role="tab">HTML</button>
-                                    <button class="nav-link" id="markdownTab" data-bs-toggle="tab" data-bs-target="#markdownPane" type="button" role="tab">마크다운</button>
-                                    <button class="btn btn-outline-secondary btn-sm ms-2" id="previewBtn" type="button">
-                                        <i class="bi bi-eye"></i> 미리보기
-                                    </button>
-                                </div>
-                                
-                                <!-- 탭 컨텐츠 -->
-                                <div class="tab-content" id="contentTabsContent">
-                                    <div class="tab-pane fade show active" id="htmlContent" role="tabpanel" aria-labelledby="htmlTab">
+        <!-- 탭 컨텐츠 -->
+        <div class="tab-content">
+            <!-- 법안 관리 탭 -->
+            <div class="tab-pane fade show active" id="bills-content">
+                <div class="row">
+                    <!-- 법안 목록 영역 -->
+                    <div class="col-lg-8">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h2 class="fs-4 mb-0">법안 분석 보고서</h2>
+                            <button id="showFormBtn" class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#formContainer">
+                                <i class="bi bi-plus-lg me-1"></i>보고서 등록
+                            </button>
+                        </div>
+
+                        <!-- 폼 섹션 -->
+                        <div class="collapse mb-4" id="formContainer">
+                            <div class="card shadow-sm">
+                                <div class="card-body">
+                                    <form id="billForm">
                                         <div class="mb-3">
-                                            <label for="billContent" class="form-label">내용 <span class="text-danger">*</span></label>
-                                            <textarea class="form-control" id="billContent" name="billContent" rows="10" required></textarea>
+                                            <label for="billTitle" class="form-label">법안명 <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="billTitle" name="billTitle" required>
                                         </div>
-                                    </div>
-                                    <div class="tab-pane fade" id="markdownPane" role="tabpanel" aria-labelledby="markdownTab">
-                                        <div class="mb-3">
-                                            <label for="markdownContent" class="form-label">마크다운 내용</label>
-                                            <textarea class="form-control" id="markdownContent" name="markdownContent" rows="10"></textarea>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="billProposer" class="form-label">담당자 <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" id="billProposer" name="billProposer" required>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="billCommittee" class="form-label">소관위원회</label>
+                                                <select class="form-select" id="billCommittee" name="billCommittee">
+                                                    <option value="">선택...</option>
+                                                    <option value="법사">법사</option>
+                                                    <option value="정무">정무</option>
+                                                    <option value="행안">행안</option>
+                                                    <option value="문체">문체</option>
+                                                    <option value="과방">과방</option>
+                                                    <option value="외통">외통</option>
+                                                    <option value="국토">국토</option>
+                                                    <option value="기재">기재</option>
+                                                    <option value="농해수">농해수</option>
+                                                    <option value="산자">산자</option>
+                                                    <option value="복지">복지</option>
+                                                    <option value="환노">환노</option>
+                                                    <option value="정보">정보</option>
+                                                    <option value="여가">여가</option>
+                                                    <option value="교육">교육</option>
+                                                </select>
+                                            </div>
                                         </div>
-                                    </div>
+                                        
+                                        <!-- 탭 네비게이션 -->
+                                        <div class="nav mb-2" role="tablist">
+                                            <button class="nav-link active" id="htmlTab" data-bs-toggle="tab" data-bs-target="#htmlContent" type="button" role="tab">HTML</button>
+                                            <button class="nav-link" id="markdownTab" data-bs-toggle="tab" data-bs-target="#markdownPane" type="button" role="tab">마크다운</button>
+                                            <button class="btn btn-outline-secondary btn-sm ms-2" id="previewBtn" type="button">
+                                                <i class="bi bi-eye"></i> 미리보기
+                                            </button>
+                                        </div>
+                                        
+                                        <!-- 탭 컨텐츠 -->
+                                        <div class="tab-content" id="contentTabsContent">
+                                            <div class="tab-pane fade show active" id="htmlContent" role="tabpanel" aria-labelledby="htmlTab">
+                                                <div class="mb-3">
+                                                    <label for="billContent" class="form-label">내용 <span class="text-danger">*</span></label>
+                                                    <textarea class="form-control" id="billContent" name="billContent" rows="10" required></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="tab-pane fade" id="markdownPane" role="tabpanel" aria-labelledby="markdownTab">
+                                                <div class="mb-3">
+                                                    <label for="markdownContent" class="form-label">마크다운 내용</label>
+                                                    <textarea class="form-control" id="markdownContent" name="markdownContent" rows="10"></textarea>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="d-flex justify-content-between mt-3">
+                                            <button type="button" class="btn btn-secondary" id="cancelFormBtn" data-bs-toggle="collapse" data-bs-target="#formContainer">취소</button>
+                                            <button type="button" class="btn btn-primary" id="submitFormBtn">등록</button>
+                                        </div>
+                                    </form>
                                 </div>
-                                
-                                <div class="d-flex justify-content-between mt-3">
-                                    <button type="button" class="btn btn-secondary" id="cancelFormBtn" data-bs-toggle="collapse" data-bs-target="#formContainer">취소</button>
-                                    <button type="button" class="btn btn-primary" id="submitFormBtn">등록</button>
+                            </div>
+                        </div>
+
+                        <!-- 법안 목록 테이블 -->
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th style="width: 50%">법안명</th>
+                                                <th class="d-none d-md-table-cell" style="width: 10%">위원회</th>
+                                                <th class="d-none d-md-table-cell" style="width: 15%">담당자</th>
+                                                <th class="d-none d-md-table-cell" style="width: 15%">등록일</th>
+                                                <th style="width: 10%" class="text-end">관리</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="billTableBody">
+                                            <!-- 여기에 법안 목록이 동적으로 표시됩니다 -->
+                                        </tbody>
+                                    </table>
                                 </div>
-                            </form>
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- 법안 목록 테이블 -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead class="bg-light">
-                                    <tr>
-                                        <th style="width: 50%">법안명</th>
-                                        <th class="d-none d-md-table-cell" style="width: 10%">위원회</th>
-                                        <th class="d-none d-md-table-cell" style="width: 15%">담당자</th>
-                                        <th class="d-none d-md-table-cell" style="width: 15%">등록일</th>
-                                        <th style="width: 10%" class="text-end">관리</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="billTableBody">
-                                    <!-- 여기에 법안 목록이 동적으로 표시됩니다 -->
-                                </tbody>
-                            </table>
+                    
+                    <!-- 사이드바 영역 -->
+                    <div class="col-lg-4">
+                        <!-- 관리자 정보 카드 -->
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-header bg-dark text-white">
+                                <h3 class="fs-5 mb-0">관리자 정보</h3>
+                            </div>
+                            <div class="card-body">
+                                <div id="adminInfo">
+                                    <p class="text-muted">로그인이 필요합니다</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 도움말 카드 -->
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-header bg-light">
+                                <h3 class="fs-5 mb-0">도움말</h3>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item px-0">
+                                        <strong>법안명:</strong> 법안의 제목을 입력하세요
+                                    </li>
+                                    <li class="list-group-item px-0">
+                                        <strong>담당자:</strong> 법안 담당자 이름을 입력하세요
+                                    </li>
+                                    <li class="list-group-item px-0">
+                                        <strong>위원회:</strong> 소관 위원회를 선택하세요
+                                    </li>
+                                    <li class="list-group-item px-0">
+                                        <strong>마크다운:</strong> 분석 내용을 마크다운으로 작성할 수 있습니다
+                                    </li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            
-            <!-- 사이드바 영역 -->
-            <div class="col-lg-4">
-                <!-- 관리자 정보 카드 -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-dark text-white">
-                        <h3 class="fs-5 mb-0">관리자 정보</h3>
-                    </div>
-                    <div class="card-body">
-                        <div id="adminInfo">
-                            <p class="text-muted">로그인이 필요합니다</p>
+
+            <!-- 피드백 관리 탭 -->
+            <div class="tab-pane fade" id="feedback-content">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h2 class="fs-4 mb-0">피드백 관리</h2>
+                            <div class="d-flex align-items-center">
+                                <select id="filterStatus" class="form-select form-select-sm me-2" style="width: auto;">
+                                    <option value="all">모든 상태</option>
+                                    <option value="대기중">대기중</option>
+                                    <option value="처리중">처리중</option>
+                                    <option value="완료">완료</option>
+                                </select>
+                                <select id="filterType" class="form-select form-select-sm me-2" style="width: auto;">
+                                    <option value="all">모든 유형</option>
+                                    <option value="개선요청">개선요청</option>
+                                    <option value="오류신고">오류신고</option>
+                                    <option value="칭찬">칭찬</option>
+                                    <option value="제안">제안</option>
+                                    <option value="기타">기타</option>
+                                </select>
+                                <button id="refreshFeedbackBtn" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>새로고침
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 피드백 목록 테이블 -->
+                        <div class="card shadow-sm">
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th style="width: 10%">ID</th>
+                                                <th style="width: 10%">유형</th>
+                                                <th style="width: 30%">제목</th>
+                                                <th style="width: 15%">작성자</th>
+                                                <th style="width: 15%">작성일</th>
+                                                <th style="width: 10%">상태</th>
+                                                <th style="width: 10%">관리</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="feedbackTableBody">
+                                            <!-- 피드백 목록이 동적으로 표시됩니다 -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <nav aria-label="피드백 페이지네이션">
+                                    <ul class="pagination justify-content-center mb-0" id="feedbackPagination">
+                                        <!-- 페이지네이션이 동적으로 표시됩니다 -->
+                                    </ul>
+                                </nav>
+                            </div>
                         </div>
                     </div>
-                </div>
-                
-                <!-- 도움말 카드 -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-light">
-                        <h3 class="fs-5 mb-0">도움말</h3>
-                    </div>
-                    <div class="card-body">
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item px-0">
-                                <strong>법안명:</strong> 법안의 제목을 입력하세요
-                            </li>
-                            <li class="list-group-item px-0">
-                                <strong>담당자:</strong> 법안 담당자 이름을 입력하세요
-                            </li>
-                            <li class="list-group-item px-0">
-                                <strong>위원회:</strong> 소관 위원회를 선택하세요
-                            </li>
-                            <li class="list-group-item px-0">
-                                <strong>마크다운:</strong> 분석 내용을 마크다운으로 작성할 수 있습니다
-                            </li>
-                        </ul>
+
+                    <!-- 피드백 사이드바 -->
+                    <div class="col-lg-4">
+                        <!-- 피드백 통계 -->
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-header bg-dark text-white">
+                                <h3 class="fs-5 mb-0">피드백 통계</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-6 mb-3">
+                                        <h4 class="fs-6 text-muted">전체</h4>
+                                        <p class="h4 fw-bold text-primary" id="totalFeedbackCount">-</p>
+                                    </div>
+                                    <div class="col-6 mb-3">
+                                        <h4 class="fs-6 text-muted">미처리</h4>
+                                        <p class="h4 fw-bold text-danger" id="pendingFeedbackCount">-</p>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <h5 class="fs-6 mb-2">유형별 통계</h5>
+                                    <div id="feedbackTypeChart">
+                                        <!-- 차트가 표시됩니다 -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 도움말 -->
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-light">
+                                <h3 class="fs-5 mb-0">도움말</h3>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item px-0">
+                                        <strong>상태 필터:</strong> 피드백의 처리 상태별로 필터링
+                                    </li>
+                                    <li class="list-group-item px-0">
+                                        <strong>유형 필터:</strong> 피드백 유형별로 필터링
+                                    </li>
+                                    <li class="list-group-item px-0">
+                                        <strong>관리:</strong> 피드백 상세 보기 및 답변 작성
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </main>
+
+    <!-- 피드백 상세 모달 -->
+    <div class="modal fade" id="feedbackDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">피드백 상세</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- 피드백 상세 정보가 동적으로 표시됩니다 -->
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- 모달 컨테이너 -->
     <div id="modalContainer">
@@ -304,5 +449,8 @@
     
     <!-- 커스텀 JS -->
     <script src="js/admin.js"></script>
+
+    <!-- 피드백 관리 JS -->
+    <script src="js/admin-feedback.js"></script>
 </body>
 </html> 

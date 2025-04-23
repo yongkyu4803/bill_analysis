@@ -216,151 +216,113 @@ function drawVisitsChart(visitsData) {
 
 // 모달 템플릿 로드 함수
 function loadModalTemplates() {
-  const modalContainer = document.getElementById('modalContainer');
-  
-  // 상세 보기 모달 템플릿
-  const viewModalTemplate = `
-    <div class="modal fade" id="viewBillModal" tabindex="-1" aria-labelledby="viewBillModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content" style="transform: translateZ(0); background-color: #ffffff !important;">
-          <div class="modal-header">
-            <h5 class="modal-title" id="viewBillModalLabel" style="color: #000000 !important;">법안 상세 보기</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <div class="bill-details">
-              <h3 id="billTitleDisplay" class="mb-3" style="color: #000000 !important;"></h3>
-              <div class="mb-3">
-                <div class="row">
-                  <div class="col-md-6">
-                    <p style="color: #000000 !important;"><strong style="color: #000000 !important;">담당자:</strong> <span id="billProposerDisplay" style="color: #000000 !important;"></span></p>
-                  </div>
-                  <div class="col-md-6">
-                    <p style="color: #000000 !important;"><strong style="color: #000000 !important;">위원회:</strong> <span id="billCommitteeDisplay" style="color: #000000 !important;"></span></p>
-                  </div>
-                </div>
-                <p style="color: #000000 !important;"><strong style="color: #000000 !important;">등록일:</strong> <span id="billDateDisplay" style="color: #000000 !important;"></span></p>
+  const modalContainer = document.getElementById('modal-container');
+  if (!modalContainer) return;
+
+  // 법안 상세 보기 모달
+  let viewBillModalTemplate = `
+  <div class="modal fade" id="viewBillModal" tabindex="-1" aria-labelledby="viewBillModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+          <div class="modal-content" style="background-color: #ffffff !important;">
+              <div class="modal-header">
+                  <h5 class="modal-title" id="viewBillModalLabel" style="color: #000000 !important; font-weight: bold;">법안 상세 정보</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
-              
-              <!-- 탭 인터페이스 추가 -->
-              <ul class="nav nav-tabs mb-3" id="billContentTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                  <button class="nav-link active" id="html-tab" data-bs-toggle="tab" data-bs-target="#html-content" 
-                    type="button" role="tab" aria-controls="html-content" aria-selected="true" 
-                    style="color: #000000 !important;">HTML 보기</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                  <button class="nav-link" id="text-tab" data-bs-toggle="tab" data-bs-target="#text-content" 
-                    type="button" role="tab" aria-controls="text-content" aria-selected="false"
-                    style="color: #000000 !important;">텍스트 보기</button>
-                </li>
-              </ul>
-              
-              <div class="tab-content" id="billContentTabContent">
-                <!-- HTML 탭 콘텐츠 -->
-                <div class="tab-pane fade show active" id="html-content" role="tabpanel" aria-labelledby="html-tab">
-                  <div id="billContentDisplay" class="border rounded p-3 bg-light overflow-auto" style="height: 400px; color: #000000 !important; opacity: 1 !important;">
-                    <div class="text-center p-3" style="color: #000000 !important;">
-                      <div class="spinner-border text-primary" role="status"></div>
-                      <p class="mt-2" style="color: #000000 !important;">내용을 불러오는 중...</p>
-                    </div>
+              <div class="modal-body" style="color: #000000 !important;">
+                  <div class="bill-details mb-3">
+                      <p><strong style="color: #000000 !important;">법안명:</strong> <span id="billModalName" style="color: #000000 !important;"></span></p>
+                      <p><strong style="color: #000000 !important;">발의자:</strong> <span id="billModalWriter" style="color: #000000 !important;"></span></p>
+                      <p><strong style="color: #000000 !important;">위원회:</strong> <span id="billModalCommittee" style="color: #000000 !important;"></span></p>
+                      <p><strong style="color: #000000 !important;">등록일:</strong> <span id="billModalDate" style="color: #000000 !important;"></span></p>
                   </div>
-                </div>
-                
-                <!-- 텍스트 탭 콘텐츠 -->
-                <div class="tab-pane fade" id="text-content" role="tabpanel" aria-labelledby="text-tab">
-                  <div id="billTextDisplay" class="border rounded p-3 bg-light overflow-auto" style="height: 400px; color: #000000 !important; opacity: 1 !important; white-space: pre-wrap;">
-                    <div class="text-center p-3" style="color: #000000 !important;">
-                      <div class="spinner-border text-primary" role="status"></div>
-                      <p class="mt-2" style="color: #000000 !important;">텍스트를 추출하는 중...</p>
-                    </div>
+                  
+                  <div class="loading-spinner text-center my-4">
+                      <div class="spinner-border text-primary" role="status">
+                          <span class="visually-hidden">로딩 중...</span>
+                      </div>
+                      <p style="color: #000000 !important;">내용을 불러오는 중입니다...</p>
                   </div>
-                </div>
+
+                  <ul class="nav nav-tabs" id="billContentTabs" role="tablist">
+                      <li class="nav-item" role="presentation">
+                          <button class="nav-link active" id="html-tab" data-bs-toggle="tab" data-bs-target="#billHtmlContentDisplay" type="button" role="tab" aria-controls="html-content" aria-selected="true" style="color: #000000 !important;">HTML 보기</button>
+                      </li>
+                      <li class="nav-item" role="presentation">
+                          <button class="nav-link" id="text-tab" data-bs-toggle="tab" data-bs-target="#billTextContentDisplay" type="button" role="tab" aria-controls="text-content" aria-selected="false" style="color: #000000 !important;">텍스트 보기</button>
+                      </li>
+                  </ul>
+                  
+                  <div class="tab-content mt-3" id="billContentTabContent">
+                      <div class="tab-pane fade show active" id="billHtmlContentDisplay" role="tabpanel" aria-labelledby="html-tab">
+                          <div class="html-content-container" style="color: #000000 !important; background-color: #ffffff !important;"></div>
+                      </div>
+                      <div class="tab-pane fade" id="billTextContentDisplay" role="tabpanel" aria-labelledby="text-tab">
+                          <div class="text-content-container" style="color: #000000 !important; background-color: #ffffff !important; white-space: pre-wrap;"></div>
+                      </div>
+                  </div>
               </div>
-            </div>
+              <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="color: #ffffff !important;">닫기</button>
+              </div>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
-          </div>
-        </div>
       </div>
-    </div>
-  `;
-  
-  // 법안 분석 보고서 모달 템플릿 - 또한 동일한 탭 인터페이스 적용
-  const analysisModalTemplate = `
-    <div class="modal fade" id="analysisReportModal" tabindex="-1" aria-labelledby="analysisReportModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-xl modal-dialog-scrollable">
-        <div class="modal-content" style="transform: translateZ(0); background-color: #ffffff !important;">
-          <div class="modal-header">
-            <h5 class="modal-title" id="analysisReportModalLabel" style="color: #000000 !important;">법안 분석 보고서</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <div class="card mb-3">
-              <div class="card-header bg-light">
-                <h6 class="mb-0" style="color: #000000 !important;">기본 정보</h6>
-              </div>
-              <div class="card-body">
-                <div class="row mb-3">
-                  <div class="col-md-6">
-                    <p style="color: #000000 !important;"><strong style="color: #000000 !important;">법안명:</strong> <span id="analysisReportTitle" style="color: #000000 !important;"></span></p>
-                    <p style="color: #000000 !important;"><strong style="color: #000000 !important;">담당자:</strong> <span id="analysisReportProposer" style="color: #000000 !important;"></span></p>
-                  </div>
-                  <div class="col-md-6">
-                    <p style="color: #000000 !important;"><strong style="color: #000000 !important;">위원회:</strong> <span id="analysisReportCommittee" style="color: #000000 !important;"></span></p>
-                    <p style="color: #000000 !important;"><strong style="color: #000000 !important;">등록일:</strong> <span id="analysisReportDate" style="color: #000000 !important;"></span></p>
-                  </div>
-                </div>
-              </div>
+  </div>`;
+
+  // 분석 리포트 모달
+  const reportModalTemplate = `
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="color: #000000 !important; transform: translateZ(0); -webkit-font-smoothing: antialiased;">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reportModalLabel" style="color: #000000 !important;">상세 내용</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            
-            <!-- 탭 인터페이스 추가 -->
-            <ul class="nav nav-tabs mb-3" id="analysisContentTabs" role="tablist">
-              <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="analysis-html-tab" data-bs-toggle="tab" data-bs-target="#analysis-html-content" 
-                  type="button" role="tab" aria-controls="analysis-html-content" aria-selected="true" 
-                  style="color: #000000 !important;">HTML 보기</button>
-              </li>
-              <li class="nav-item" role="presentation">
-                <button class="nav-link" id="analysis-text-tab" data-bs-toggle="tab" data-bs-target="#analysis-text-content" 
-                  type="button" role="tab" aria-controls="analysis-text-content" aria-selected="false"
-                  style="color: #000000 !important;">텍스트 보기</button>
-              </li>
-            </ul>
-            
-            <div class="tab-content" id="analysisContentTabContent">
-              <!-- HTML 탭 콘텐츠 -->
-              <div class="tab-pane fade show active" id="analysis-html-content" role="tabpanel" aria-labelledby="analysis-html-tab">
-                <div id="analysisReportContent" class="overflow-auto" style="height: 500px; color: #000000 !important; opacity: 1 !important;">
-                  <div class="text-center p-3" style="color: #000000 !important;">
-                    <div class="spinner-border text-primary" role="status"></div>
+            <div class="modal-body" style="color: #000000 !important;">
+                <div class="report-loading text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">로딩 중...</span>
+                    </div>
                     <p class="mt-2" style="color: #000000 !important;">내용을 불러오는 중...</p>
-                  </div>
                 </div>
-              </div>
-              
-              <!-- 텍스트 탭 콘텐츠 -->
-              <div class="tab-pane fade" id="analysis-text-content" role="tabpanel" aria-labelledby="analysis-text-tab">
-                <div id="analysisReportTextContent" class="overflow-auto" style="height: 500px; color: #000000 !important; opacity: 1 !important; white-space: pre-wrap;">
-                  <div class="text-center p-3" style="color: #000000 !important;">
-                    <div class="spinner-border text-primary" role="status"></div>
-                    <p class="mt-2" style="color: #000000 !important;">텍스트를 추출하는 중...</p>
-                  </div>
+                <div class="report-content" style="display: none;">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p style="color: #000000 !important;"><strong>법안명:</strong> <span id="reportBillName" style="color: #000000 !important;"></span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p style="color: #000000 !important;"><strong>등록자:</strong> <span id="reportWriter" style="color: #000000 !important;"></span></p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p style="color: #000000 !important;"><strong>위원회:</strong> <span id="reportCommittee" style="color: #000000 !important;"></span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p style="color: #000000 !important;"><strong>등록일:</strong> <span id="reportDate" style="color: #000000 !important;"></span></p>
+                        </div>
+                    </div>
+                    <ul class="nav nav-tabs mb-3" id="reportContentTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="html-tab" data-bs-toggle="tab" data-bs-target="#html-content" type="button" role="tab" aria-controls="html-content" aria-selected="true" style="color: #495057 !important;">HTML 보기</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="text-tab" data-bs-toggle="tab" data-bs-target="#text-content" type="button" role="tab" aria-controls="text-content" aria-selected="false" style="color: #495057 !important;">텍스트 보기</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="reportContentTabsContent">
+                        <div class="tab-pane fade show active" id="html-content" role="tabpanel" aria-labelledby="html-tab">
+                            <div id="reportDescription" style="color: #000000 !important; background-color: #ffffff;"></div>
+                        </div>
+                        <div class="tab-pane fade" id="text-content" role="tabpanel" aria-labelledby="text-tab">
+                            <pre id="reportTextContent" style="color: #000000 !important; background-color: #ffffff; white-space: pre-wrap; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px;"></pre>
+                        </div>
+                    </div>
                 </div>
-              </div>
             </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
-          </div>
         </div>
-      </div>
-    </div>
-  `;
-  
-  // 모달 템플릿을 컨테이너에 추가
-  modalContainer.innerHTML = viewModalTemplate + analysisModalTemplate;
+    </div>`;
+
+  // 모달 컨테이너에 템플릿 추가
+  modalContainer.innerHTML = viewBillModalTemplate + reportModalTemplate;
 }
 
 // 법안 목록 로드 함수
@@ -559,249 +521,84 @@ function setupEventListeners() {
   });
 }
 
-// HTML 내용을 안전하게 정리하는 함수
-function sanitizeHtml(html) {
-  if (!html) return '';
-  
-  try {
-    // 새로운 DOMParser 생성
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-    
-    // 모든 script 태그 제거
-    const scripts = doc.querySelectorAll('script');
-    scripts.forEach(script => script.remove());
-    
-    // 모든 이벤트 핸들러 속성 제거 (onclick, onload 등)
-    const allElements = doc.querySelectorAll('*');
-    allElements.forEach(el => {
-      const attributes = el.attributes;
-      const attrsToRemove = [];
-      
-      for (let i = 0; i < attributes.length; i++) {
-        const attr = attributes[i];
-        // 이벤트 핸들러 속성 제거
-        if (attr.name.startsWith('on')) {
-          attrsToRemove.push(attr.name);
-        }
-        // javascript: 프로토콜이 있는 href 속성 제거
-        if (attr.name === 'href' && attr.value.toLowerCase().startsWith('javascript:')) {
-          el.setAttribute('href', '#');
-        }
-      }
-      
-      // 제거할 속성들 제거
-      attrsToRemove.forEach(attr => el.removeAttribute(attr));
-    });
-    
-    return doc.body.innerHTML;
-  } catch (error) {
-    console.error('HTML 정리 중 오류 발생:', error);
-    return '콘텐츠를 표시할 수 없습니다.';
-  }
+// 안드로이드 기기 감지 함수
+function isAndroidDevice() {
+    const userAgent = navigator.userAgent.toLowerCase();
+    return /android/i.test(userAgent);
 }
 
-// HTML에서 텍스트만 추출하는 함수
+// 모바일 기기 감지 함수
+function isMobileDevice() {
+    return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet|mobi/i.test(navigator.userAgent.toLowerCase());
+}
+
+// HTML에서 텍스트 추출 함수
 function extractTextFromHtml(html) {
-  if (!html) return '';
-  
-  try {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
+    if (!html || typeof html !== 'string') {
+        return '';
+    }
     
-    // 스크립트와 스타일 태그 제거
-    const scripts = doc.querySelectorAll('script, style');
-    scripts.forEach(script => script.remove());
-    
-    // 텍스트 추출
-    const body = doc.body;
-    return body.textContent || body.innerText || '';
-  } catch (error) {
-    console.error('HTML에서 텍스트 추출 중 오류 발생:', error);
-    return '텍스트 추출 실패';
-  }
+    try {
+        // DOMParser 사용하여 HTML을 DOM으로 변환
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        // 스크립트와 스타일 요소 제거
+        const scripts = doc.querySelectorAll('script, style');
+        scripts.forEach(script => script.remove());
+        
+        // 텍스트 추출
+        return doc.body.textContent || '';
+    } catch (error) {
+        console.error('HTML에서 텍스트 추출 중 오류:', error);
+        // 기본 방법으로 텍스트 추출 시도
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        return div.textContent || '';
+    }
 }
 
-// 법안 상세 정보 보기 함수
-function viewBillDetails(bill) {
-  document.getElementById('billModalLabel').textContent = bill.bill_name;
-  
-  // 모달 본문에 법안 정보 표시
-  const modalBody = document.querySelector('#billModal .modal-body');
-  
-  // 로딩 상태 표시
-  modalBody.innerHTML = `
-    <div class="d-flex justify-content-center my-4">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">로딩 중...</span>
-      </div>
-    </div>
-    <p class="text-center text-dark">법안 내용을 로드하고 있습니다...</p>
-  `;
-  
-  // 모달 표시
-  const billModal = new bootstrap.Modal(document.getElementById('billModal'));
-  billModal.show();
-  
-  // 모바일 기기 감지
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  
-  // 탭 구조로 HTML과 텍스트 버전 모두 표시
-  modalBody.innerHTML = `
-    <div class="mb-3">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <div>
-          <span class="fw-bold">담당자:</span> <span class="text-dark">${bill.writer || '-'}</span>
-        </div>
-        <div>
-          <span class="fw-bold">위원회:</span> <span class="badge bg-secondary">${bill.committee || '-'}</span>
-        </div>
-      </div>
-      <div>
-        <span class="fw-bold">등록일:</span> <span class="text-dark">${formatDate(bill.created_at) || '-'}</span>
-      </div>
-    </div>
-    
-    <ul class="nav nav-tabs" id="billContentTabs" role="tablist" style="background-color: #ffffff;">
-      <li class="nav-item" role="presentation">
-        <a class="nav-link" id="htmlTab" data-bs-toggle="tab" href="#htmlContent" role="tab" 
-           aria-controls="htmlContent" aria-selected="true" style="color: #000000;">HTML 보기</a>
-      </li>
-      <li class="nav-item" role="presentation">
-        <a class="nav-link active" id="textTab" data-bs-toggle="tab" href="#textContent" role="tab" 
-           aria-controls="textContent" aria-selected="false" style="color: #000000;">텍스트 보기</a>
-      </li>
-    </ul>
-    
-    <div class="tab-content pt-3" id="billContentTabContent">
-      <div class="tab-pane fade" id="htmlContent" role="tabpanel" aria-labelledby="htmlTab">
-        <div id="htmlContentDisplay" style="color: #000000;"></div>
-      </div>
-      <div class="tab-pane fade show active" id="textContent" role="tabpanel" aria-labelledby="textTab">
-        <div id="textContentDisplay" style="white-space: pre-wrap; color: #000000;"></div>
-      </div>
-    </div>
-  `;
-  
-  const htmlContentDisplay = document.getElementById('htmlContentDisplay');
-  const textContentDisplay = document.getElementById('textContentDisplay');
-  
-  // 짧은 지연 후 콘텐츠 로드 (모달이 완전히 표시된 후)
-  setTimeout(() => {
-    try {
-      // HTML 콘텐츠 처리
-      const sanitizedHtml = sanitizeHtml(bill.description);
-      htmlContentDisplay.innerHTML = sanitizedHtml || '<p style="color: #000000 !important;">내용이 없습니다.</p>';
-      
-      // 텍스트 콘텐츠 처리
-      const plainText = extractTextFromHtml(bill.description);
-      textContentDisplay.textContent = plainText || '내용이 없습니다.';
-      
-      // 모바일에서 텍스트 색상 강제 적용
-      if (isMobile) {
-        const contentElements = htmlContentDisplay.querySelectorAll('*');
-        contentElements.forEach(el => {
-          el.style.color = '#000000';
-          el.style.opacity = '1';
-        });
-      }
-    } catch (error) {
-      console.error('법안 내용 로드 중 오류 발생:', error);
-      htmlContentDisplay.innerHTML = '<div class="alert alert-danger" style="color: #000000 !important;">법안 내용을 표시하는 중 오류가 발생했습니다.</div>';
-      textContentDisplay.textContent = '법안 내용을 표시하는 중 오류가 발생했습니다.';
+// HTML 정제 함수 (없는 경우 정의)
+function sanitizeHtml(html) {
+    if (!html || typeof html !== 'string') {
+        return '';
     }
-  }, 300);
-}
-
-// 분석 보고서 표시 함수
-function showAnalysisReport(bill) {
-  document.getElementById('analysisModalLabel').textContent = bill.bill_name;
-  
-  // 모달 본문에 보고서 정보 표시
-  const modalBody = document.querySelector('#analysisModal .modal-body');
-  
-  // 로딩 상태 표시
-  modalBody.innerHTML = `
-    <div class="d-flex justify-content-center my-4">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">로딩 중...</span>
-      </div>
-    </div>
-    <p class="text-center text-dark">분석 보고서를 로드하고 있습니다...</p>
-  `;
-  
-  // 모달 표시
-  const analysisModal = new bootstrap.Modal(document.getElementById('analysisModal'));
-  analysisModal.show();
-  
-  // 모바일 기기 감지
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  
-  // 탭 구조로 HTML과 텍스트 버전 모두 표시
-  modalBody.innerHTML = `
-    <div class="mb-3">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <div>
-          <span class="fw-bold">담당자:</span> <span class="text-dark">${bill.writer || '-'}</span>
-        </div>
-        <div>
-          <span class="fw-bold">위원회:</span> <span class="badge bg-secondary">${bill.committee || '-'}</span>
-        </div>
-      </div>
-      <div>
-        <span class="fw-bold">등록일:</span> <span class="text-dark">${formatDate(bill.created_at) || '-'}</span>
-      </div>
-    </div>
     
-    <ul class="nav nav-tabs" id="analysisContentTabs" role="tablist" style="background-color: #ffffff;">
-      <li class="nav-item" role="presentation">
-        <a class="nav-link" id="analysisHtmlTab" data-bs-toggle="tab" href="#analysisHtmlContent" role="tab" 
-           aria-controls="analysisHtmlContent" aria-selected="true" style="color: #000000;">HTML 보기</a>
-      </li>
-      <li class="nav-item" role="presentation">
-        <a class="nav-link active" id="analysisTextTab" data-bs-toggle="tab" href="#analysisTextContent" role="tab" 
-           aria-controls="analysisTextContent" aria-selected="false" style="color: #000000;">텍스트 보기</a>
-      </li>
-    </ul>
-    
-    <div class="tab-content pt-3" id="analysisContentTabContent">
-      <div class="tab-pane fade" id="analysisHtmlContent" role="tabpanel" aria-labelledby="analysisHtmlTab">
-        <div id="htmlContentDisplay" style="color: #000000;"></div>
-      </div>
-      <div class="tab-pane fade show active" id="analysisTextContent" role="tabpanel" aria-labelledby="analysisTextTab">
-        <div id="textContentDisplay" style="white-space: pre-wrap; color: #000000;"></div>
-      </div>
-    </div>
-  `;
-  
-  const htmlContentDisplay = document.getElementById('htmlContentDisplay');
-  const textContentDisplay = document.getElementById('textContentDisplay');
-  
-  // 짧은 지연 후 콘텐츠 로드 (모달이 완전히 표시된 후)
-  setTimeout(() => {
     try {
-      // HTML 콘텐츠 처리
-      const sanitizedHtml = sanitizeHtml(bill.analysis_report);
-      htmlContentDisplay.innerHTML = sanitizedHtml || '<p style="color: #000000 !important;">분석 보고서가 없습니다.</p>';
-      
-      // 텍스트 콘텐츠 처리
-      const plainText = extractTextFromHtml(bill.analysis_report);
-      textContentDisplay.textContent = plainText || '분석 보고서가 없습니다.';
-      
-      // 모바일에서 텍스트 색상 강제 적용
-      if (isMobile) {
-        const contentElements = htmlContentDisplay.querySelectorAll('*');
-        contentElements.forEach(el => {
-          el.style.color = '#000000';
-          el.style.opacity = '1';
+        // DOMParser를 사용하여 HTML 파싱
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        // 위험한 태그 및 속성 제거
+        const dangerousTags = ['script'];
+        dangerousTags.forEach(tagName => {
+            const elements = doc.querySelectorAll(tagName);
+            elements.forEach(element => element.remove());
         });
-      }
+        
+        // 위험한 인라인 이벤트 속성 제거
+        const allElements = doc.querySelectorAll('*');
+        allElements.forEach(element => {
+            const attributes = element.attributes;
+            for (let i = attributes.length - 1; i >= 0; i--) {
+                const attr = attributes[i];
+                if (attr.name.startsWith('on') || attr.value.includes('javascript:')) {
+                    element.removeAttribute(attr.name);
+                }
+            }
+        });
+        
+        // 정제된 HTML 반환
+        return doc.body.innerHTML;
     } catch (error) {
-      console.error('분석 보고서 로드 중 오류 발생:', error);
-      htmlContentDisplay.innerHTML = '<div class="alert alert-danger" style="color: #000000 !important;">분석 보고서를 표시하는 중 오류가 발생했습니다.</div>';
-      textContentDisplay.textContent = '분석 보고서를 표시하는 중 오류가 발생했습니다.';
+        console.error('HTML 정제 중 오류:', error);
+        // 기본적인 정제 메서드 사용
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        const scripts = div.querySelectorAll('script');
+        scripts.forEach(script => script.remove());
+        return div.innerHTML;
     }
-  }, 300);
 }
 
 // 날짜 포맷 함수
@@ -922,12 +719,16 @@ async function handleFeedbackSubmit(e) {
             email: formData.get('email'),
             subject: formData.get('subject'),
             message: formData.get('message'),
-            billInfo: formData.get('billInfo') || '지정된 법안 없음',
-            createdAt: new Date().toISOString()
+            bill_id: formData.get('billId') || null,
+            bill_name: formData.get('billName') || null,
+            bill_info: formData.get('billInfo') || '지정된 법안 없음',
+            created_at: new Date().toISOString()
         };
         
+        console.log('제출 중인 데이터:', feedbackData);
+        
         // Supabase에 데이터 저장
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('feedback')
             .insert([feedbackData]);
             
@@ -969,4 +770,328 @@ function initPage() {
 }
 
 // DOM이 로드되면 페이지 초기화
-document.addEventListener('DOMContentLoaded', initPage); 
+document.addEventListener('DOMContentLoaded', initPage);
+
+// 법안 상세보기
+function viewBillDetails(bill) {
+    // 안드로이드 기기 감지
+    const isAndroid = isAndroidDevice();
+    const isMobile = isMobileDevice();
+    
+    // 모달 콘텐츠 생성
+    const modalContentHtml = `
+        <div class="modal-header">
+            <h5 class="modal-title" style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important; font-weight: bold;">법안 상세</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important; background-color: #ffffff !important;">
+            <div class="bill-details mb-3">
+                <p><strong style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important;">법안명:</strong> <span style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important;">${bill.name || ''}</span></p>
+                <p><strong style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important;">발의자:</strong> <span style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important;">${bill.writer || '-'}</span></p>
+                <p><strong style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important;">위원회:</strong> <span style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important;">${bill.committee || '-'}</span></p>
+                <p><strong style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important;">등록일:</strong> <span style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important;">${formatDate(bill.created_at) || '-'}</span></p>
+            </div>
+            
+            <div class="loading-spinner text-center my-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">로딩 중...</span>
+                </div>
+                <p style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important;">내용을 불러오는 중입니다...</p>
+            </div>
+
+            <ul class="nav nav-tabs" id="billContentTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link ${isAndroid ? '' : 'active'}" id="bill-html-tab" data-bs-toggle="tab" data-bs-target="#billHtmlContentDisplay" type="button" role="tab" aria-controls="billHtmlContentDisplay" aria-selected="${isAndroid ? 'false' : 'true'}" style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important; background-color: #f8f9fa !important;">HTML 보기</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link ${isAndroid ? 'active' : ''}" id="bill-text-tab" data-bs-toggle="tab" data-bs-target="#billTextContentDisplay" type="button" role="tab" aria-controls="billTextContentDisplay" aria-selected="${isAndroid ? 'true' : 'false'}" style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important; background-color: #f8f9fa !important;">텍스트 보기</button>
+                </li>
+            </ul>
+            
+            <div class="tab-content mt-2">
+                <div class="tab-pane fade ${isAndroid ? '' : 'show active'}" id="billHtmlContentDisplay" role="tabpanel" aria-labelledby="bill-html-tab">
+                    <div class="html-content-container" style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important; background-color: #ffffff !important;">
+                        <p class="content-placeholder">내용을 불러오는 중...</p>
+                    </div>
+                </div>
+                <div class="tab-pane fade ${isAndroid ? 'show active' : ''}" id="billTextContentDisplay" role="tabpanel" aria-labelledby="bill-text-tab">
+                    <div class="text-content-container" style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important; background-color: #ffffff !important; white-space: pre-wrap;">
+                        <p class="content-placeholder">내용을 불러오는 중...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+        </div>
+    `;
+    
+    // 모달 요소 가져오기
+    const modalElement = document.getElementById('viewBillModal');
+    const modalDialog = modalElement.querySelector('.modal-dialog');
+    const modalContentElement = modalElement.querySelector('.modal-content');
+    
+    // 모달 크기 설정 (모바일에서는 전체 화면에 가깝게)
+    if (isMobile) {
+        modalDialog.classList.add('modal-fullscreen-sm-down');
+    } else {
+        modalDialog.classList.add('modal-lg');
+    }
+    
+    // 모달 콘텐츠 설정
+    modalContentElement.innerHTML = modalContentHtml;
+    modalContentElement.style.transform = 'translateZ(0)'; // 하드웨어 가속 활성화
+    modalContentElement.style.webkitTransform = 'translateZ(0)'; // iOS/Safari 지원
+    modalContentElement.style.backgroundColor = '#ffffff';
+    modalContentElement.style.color = '#000000';
+    modalContentElement.style.opacity = '1';
+    modalContentElement.style.webkitTextFillColor = '#000000';
+    
+    // 모달 표시
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
+    
+    // 내용 불러오기 및 표시 (약간의 지연을 두어 모달이 먼저 렌더링되도록 함)
+    setTimeout(() => {
+        try {
+            // 로딩 표시 숨기기
+            modalElement.querySelector('.loading-spinner').style.display = 'none';
+            
+            // 법안 내용 가져오기
+            const content = bill.description || '';
+            
+            // HTML 정제
+            const sanitizedHTML = sanitizeHtml(content);
+            
+            // HTML 탭에 내용 표시
+            const htmlContainer = modalElement.querySelector('#billHtmlContentDisplay .html-content-container');
+            if (sanitizedHTML.trim()) {
+                try {
+                    htmlContainer.innerHTML = sanitizedHTML;
+                    
+                    // 모든 텍스트 요소에 색상 강제 적용
+                    const textElements = htmlContainer.querySelectorAll('p, span, div, h1, h2, h3, h4, h5, h6, li, td, th, a, strong, em, u, i, b');
+                    textElements.forEach(el => {
+                        el.style.color = '#000000';
+                        el.style.opacity = '1';
+                        el.style.webkitTextFillColor = '#000000';
+                        // 글꼴 렌더링 개선
+                        el.style.textRendering = 'optimizeLegibility';
+                        el.style.webkitFontSmoothing = 'antialiased';
+                        el.style.mozOsxFontSmoothing = 'grayscale';
+                    });
+                } catch (renderError) {
+                    console.error('HTML 렌더링 오류:', renderError);
+                    htmlContainer.innerHTML = '<p style="color: #000000 !important;">HTML 렌더링 중 오류가 발생했습니다.</p>';
+                }
+            } else {
+                htmlContainer.innerHTML = '<p style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important;">내용이 없습니다.</p>';
+            }
+            
+            // 텍스트 추출 및 텍스트 탭에 표시
+            const textContainer = modalElement.querySelector('#billTextContentDisplay .text-content-container');
+            try {
+                const textContent = extractTextFromHtml(content);
+                if (textContent.trim()) {
+                    textContainer.textContent = textContent;
+                    textContainer.style.color = '#000000';
+                    textContainer.style.opacity = '1';
+                    textContainer.style.webkitTextFillColor = '#000000';
+                } else {
+                    textContainer.textContent = '내용이 없습니다.';
+                    textContainer.style.color = '#000000';
+                    textContainer.style.opacity = '1';
+                    textContainer.style.webkitTextFillColor = '#000000';
+                }
+            } catch (error) {
+                console.error('텍스트 추출 오류:', error);
+                textContainer.textContent = '텍스트 변환 중 오류가 발생했습니다.';
+                textContainer.style.color = '#000000';
+                textContainer.style.opacity = '1';
+                textContainer.style.webkitTextFillColor = '#000000';
+            }
+        } catch (error) {
+            console.error('법안 내용 표시 오류:', error);
+            modalElement.querySelector('.modal-body').innerHTML += `
+                <div class="alert alert-danger" style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important; background-color: #f8d7da !important;">
+                    법안 내용을 표시하는 중 오류가 발생했습니다.
+                </div>
+            `;
+        }
+    }, 300);
+}
+
+// 분석 보고서 표시
+function showAnalysisReport(report) {
+    // 안드로이드 기기 감지
+    const isAndroid = isAndroidDevice();
+    const isMobile = isMobileDevice();
+    
+    // 모달 콘텐츠 생성
+    const modalContentHtml = `
+        <div class="modal-header">
+            <h5 class="modal-title" style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important; font-weight: bold;">분석 보고서</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important; background-color: #ffffff !important;">
+            <div class="report-details mb-3">
+                <p><strong style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important;">법안명:</strong> <span style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important;">${report.bill_name || ''}</span></p>
+                <p><strong style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important;">발의자:</strong> <span style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important;">${report.writer || '-'}</span></p>
+                <p><strong style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important;">위원회:</strong> <span style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important;">${report.committee || '-'}</span></p>
+                <p><strong style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important;">등록일:</strong> <span style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important;">${formatDate(report.created_at) || '-'}</span></p>
+            </div>
+            
+            <div class="loading-spinner text-center my-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">로딩 중...</span>
+                </div>
+                <p style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important;">내용을 불러오는 중입니다...</p>
+            </div>
+
+            <ul class="nav nav-tabs" id="reportContentTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link ${isAndroid ? '' : 'active'}" id="report-html-tab" data-bs-toggle="tab" data-bs-target="#reportHtmlContentDisplay" type="button" role="tab" aria-controls="reportHtmlContentDisplay" aria-selected="${isAndroid ? 'false' : 'true'}" style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important; background-color: #f8f9fa !important;">HTML 보기</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link ${isAndroid ? 'active' : ''}" id="report-text-tab" data-bs-toggle="tab" data-bs-target="#reportTextContentDisplay" type="button" role="tab" aria-controls="reportTextContentDisplay" aria-selected="${isAndroid ? 'true' : 'false'}" style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important; background-color: #f8f9fa !important;">텍스트 보기</button>
+                </li>
+            </ul>
+            
+            <div class="tab-content mt-2">
+                <div class="tab-pane fade ${isAndroid ? '' : 'show active'}" id="reportHtmlContentDisplay" role="tabpanel" aria-labelledby="report-html-tab">
+                    <div class="html-content-container" style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important; background-color: #ffffff !important;">
+                        <p class="content-placeholder">내용을 불러오는 중...</p>
+                    </div>
+                </div>
+                <div class="tab-pane fade ${isAndroid ? 'show active' : ''}" id="reportTextContentDisplay" role="tabpanel" aria-labelledby="report-text-tab">
+                    <div class="text-content-container" style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important; background-color: #ffffff !important; white-space: pre-wrap;">
+                        <p class="content-placeholder">내용을 불러오는 중...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+        </div>
+    `;
+    
+    // 모달 요소 가져오기
+    const modalElement = document.getElementById('analysisReportModal');
+    const modalDialog = modalElement.querySelector('.modal-dialog');
+    const modalContentElement = modalElement.querySelector('.modal-content');
+    
+    // 모달 크기 설정 (모바일에서는 전체 화면에 가깝게)
+    if (isMobile) {
+        modalDialog.classList.add('modal-fullscreen-sm-down');
+    } else {
+        modalDialog.classList.add('modal-lg');
+    }
+    
+    // 모달 콘텐츠 설정
+    modalContentElement.innerHTML = modalContentHtml;
+    modalContentElement.style.transform = 'translateZ(0)'; // 하드웨어 가속 활성화
+    modalContentElement.style.webkitTransform = 'translateZ(0)'; // iOS/Safari 지원
+    modalContentElement.style.backgroundColor = '#ffffff';
+    modalContentElement.style.color = '#000000';
+    modalContentElement.style.opacity = '1';
+    modalContentElement.style.webkitTextFillColor = '#000000';
+    
+    // 모달 표시
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
+    
+    // 내용 불러오기 및 표시 (약간의 지연을 두어 모달이 먼저 렌더링되도록 함)
+    setTimeout(() => {
+        try {
+            // 로딩 표시 숨기기
+            modalElement.querySelector('.loading-spinner').style.display = 'none';
+            
+            // 보고서 내용 가져오기
+            const content = report.content || '';
+            
+            // HTML 정제
+            const sanitizedHTML = sanitizeHtml(content);
+            
+            // HTML 탭에 내용 표시
+            const htmlContainer = modalElement.querySelector('#reportHtmlContentDisplay .html-content-container');
+            if (sanitizedHTML.trim()) {
+                try {
+                    htmlContainer.innerHTML = sanitizedHTML;
+                    
+                    // 모든 텍스트 요소에 색상 강제 적용
+                    const textElements = htmlContainer.querySelectorAll('p, span, div, h1, h2, h3, h4, h5, h6, li, td, th, a, strong, em, u, i, b');
+                    textElements.forEach(el => {
+                        el.style.color = '#000000';
+                        el.style.opacity = '1';
+                        el.style.webkitTextFillColor = '#000000';
+                        // 글꼴 렌더링 개선
+                        el.style.textRendering = 'optimizeLegibility';
+                        el.style.webkitFontSmoothing = 'antialiased';
+                        el.style.mozOsxFontSmoothing = 'grayscale';
+                    });
+                } catch (renderError) {
+                    console.error('HTML 렌더링 오류:', renderError);
+                    htmlContainer.innerHTML = '<p style="color: #000000 !important;">HTML 렌더링 중 오류가 발생했습니다.</p>';
+                }
+            } else {
+                htmlContainer.innerHTML = '<p style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important;">내용이 없습니다.</p>';
+            }
+            
+            // 텍스트 추출 및 텍스트 탭에 표시
+            const textContainer = modalElement.querySelector('#reportTextContentDisplay .text-content-container');
+            try {
+                const textContent = extractTextFromHtml(content);
+                if (textContent.trim()) {
+                    textContainer.textContent = textContent;
+                    textContainer.style.color = '#000000';
+                    textContainer.style.opacity = '1';
+                    textContainer.style.webkitTextFillColor = '#000000';
+                } else {
+                    textContainer.textContent = '내용이 없습니다.';
+                    textContainer.style.color = '#000000';
+                    textContainer.style.opacity = '1';
+                    textContainer.style.webkitTextFillColor = '#000000';
+                }
+            } catch (error) {
+                console.error('텍스트 추출 오류:', error);
+                textContainer.textContent = '텍스트 변환 중 오류가 발생했습니다.';
+                textContainer.style.color = '#000000';
+                textContainer.style.opacity = '1';
+                textContainer.style.webkitTextFillColor = '#000000';
+            }
+        } catch (error) {
+            console.error('보고서 내용 표시 오류:', error);
+            modalElement.querySelector('.modal-body').innerHTML += `
+                <div class="alert alert-danger" style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; opacity: 1 !important; background-color: #f8d7da !important;">
+                    보고서 내용을 표시하는 중 오류가 발생했습니다.
+                </div>
+            `;
+        }
+    }, 300);
+}
+
+// 홈페이지 초기화 함수
+function initHomePage() {
+    // 모달 템플릿 로드
+    loadModalTemplates();
+    
+    // Supabase 연결 테스트
+    testSupabaseConnection().then(isConnected => {
+        if (!isConnected) return;
+        
+        // 방문자 기록
+        recordVisit();
+        
+        // 관리자 체크
+        checkAdminStatus();
+        
+        // 법안 목록 로드
+        loadBills();
+        
+        // 통계 업데이트
+        updateStatistics();
+        
+        // 이벤트 리스너 등록
+        setupEventListeners();
+    });
+} 
