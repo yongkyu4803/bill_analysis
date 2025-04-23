@@ -12,21 +12,39 @@ let currentFilters = {
 
 // DOM 로드 시 실행
 document.addEventListener('DOMContentLoaded', async function() {
-    // 관리자 로그인 확인
-    const isLoggedIn = await checkAdminLogin();
-    if (!isLoggedIn) {
-        showLoginForm();
-        return;
+    console.log('피드백 관리 페이지 초기화 중...');
+    
+    try {
+        // 관리자 로그인 확인
+        const { data: { session }, error } = await supabaseClient.auth.getSession();
+        
+        if (error) {
+            console.error('세션 확인 오류:', error);
+            showLoginForm();
+            return;
+        }
+
+        if (!session) {
+            console.log('로그인이 필요합니다.');
+            showLoginForm();
+            return;
+        }
+        
+        console.log('관리자 로그인 확인됨');
+        
+        // 피드백 관리 UI 표시
+        showFeedbackManagement();
+        
+        // 피드백 목록 로드
+        await loadFeedbacks();
+        
+        // 이벤트 리스너 등록
+        setupEventListeners();
+        
+    } catch (error) {
+        console.error('초기화 오류:', error);
+        showAlert('danger', '페이지 초기화 중 오류가 발생했습니다.');
     }
-    
-    // 피드백 관리 UI 표시
-    showFeedbackManagement();
-    
-    // 피드백 목록 로드
-    loadFeedbacks();
-    
-    // 이벤트 리스너 등록
-    setupEventListeners();
 });
 
 // 관리자 로그인 확인 함수
@@ -199,6 +217,24 @@ function showFeedbackManagement() {
                 </nav>
             </div>
         </div>
+
+        <!-- 피드백 상세 모달 -->
+        <div class="modal fade" id="feedbackDetailModal" tabindex="-1" aria-labelledby="feedbackDetailModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="feedbackDetailModalLabel">피드백 상세</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- 상세 내용이 동적으로 로드됩니다 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 알림 컨테이너 -->
+        <div id="alertContainer"></div>
     `;
 }
 
@@ -208,8 +244,15 @@ function setupEventListeners() {
     document.getElementById('refreshBtn')?.addEventListener('click', loadFeedbacks);
     
     // 필터링
-    document.getElementById('filterStatus')?.addEventListener('change', loadFeedbacks);
-    document.getElementById('filterType')?.addEventListener('change', loadFeedbacks);
+    document.getElementById('filterStatus')?.addEventListener('change', (e) => {
+        currentFilters.status = e.target.value;
+        loadFeedbacks();
+    });
+    
+    document.getElementById('filterType')?.addEventListener('change', (e) => {
+        currentFilters.type = e.target.value;
+        loadFeedbacks();
+    });
     
     // 로그아웃 버튼
     document.getElementById('logoutBtn')?.addEventListener('click', handleLogout);

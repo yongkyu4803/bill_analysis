@@ -12,8 +12,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <!-- 커스텀 CSS -->
     <link href="css/style.css" rel="stylesheet">
-    <!-- Supabase 클라이언트 라이브러리 -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.5/dist/umd/supabase.min.js"></script>
     
     <style>
         /* 관리자 페이지 스타일 */
@@ -105,52 +103,33 @@
                 <p class="mt-3">로딩 중입니다...</p>
             </div>
         </div>
-
-        <!-- 통계 요소들 -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">피드백 현황</h5>
-                        <p class="mb-2">전체 피드백: <span id="totalFeedbackCount">0</span>건</p>
-                        <p class="mb-0">미처리 피드백: <span id="pendingFeedbackCount">0</span>건</p>
-                        <span id="newFeedbackBadge" class="badge bg-danger" style="display: none;">0</span>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">유형별 통계</h5>
-                        <div id="feedbackTypeChart">
-                            <!-- 차트가 동적으로 로드됩니다 -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </main>
+
+    <!-- 모달 컨테이너 -->
+    <div id="modalContainer"></div>
 
     <!-- 알림 컨테이너 -->
     <div id="alertContainer"></div>
 
-    <!-- 피드백 상세 모달 -->
-    <div class="modal fade" id="feedbackDetailModal" tabindex="-1" aria-labelledby="feedbackDetailModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="feedbackDetailModalLabel">피드백 상세 정보</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <!-- 피드백 상세 내용이 동적으로 로드됩니다 -->
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Supabase 클라이언트 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.5/dist/umd/supabase.min.js"></script>
+    
+    <!-- Supabase 초기화 -->
+    <script>
+        console.log('Supabase 초기화 시작...');
+        const supabaseUrl = 'https://rxwztfdnragffxbmlscf.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4d3p0ZmRucmFnZmZ4Ym1sc2NmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI0NzU2MDgsImV4cCI6MjA1ODA1MTYwOH0.KN8cR6_xHHHfuF1odUi9WwzkbOHCmwuRaK0FYe7b0Ig';
+        
+        try {
+            window.supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+            console.log('Supabase 초기화 완료');
+        } catch (error) {
+            console.error('Supabase 초기화 오류:', error);
+        }
+    </script>
     
     <!-- 관리자 JS -->
     <script src="js/admin.js"></script>

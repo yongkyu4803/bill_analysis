@@ -1,8 +1,3 @@
-// Supabase 클라이언트 초기화
-const supabaseUrl = 'https://rxwztfdnragffxbmlscf.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4d3p0ZmRucmFnZmZ4Ym1sc2NmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI0NzU2MDgsImV4cCI6MjA1ODA1MTYwOH0.KN8cR6_xHHHfuF1odUi9WwzkbOHCmwuRaK0FYe7b0Ig';
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
-
 // 전역 변수 선언
 let bills = [];
 let currentEditingBill = null;
@@ -10,6 +5,15 @@ let isAuthenticated = false; // 인증 상태를 추적하는 변수
 
 // 페이지 로드 시 실행되는 초기화 함수
 document.addEventListener('DOMContentLoaded', async function() {
+  console.log('관리자 페이지 초기화 중...');
+  
+  // 폼 컨테이너 초기에 숨김 처리
+  const formContainer = document.getElementById('formContainer');
+  if (formContainer) {
+    formContainer.style.display = 'none';
+    console.log('폼 컨테이너 초기 숨김 처리 완료');
+  }
+  
   // 모달 템플릿 로드
   loadModalTemplates();
   
@@ -18,6 +22,58 @@ document.addEventListener('DOMContentLoaded', async function() {
   
   // 이벤트 리스너 등록
   setupEventListeners();
+  
+  // 새 법안 등록 버튼 이벤트 리스너 추가
+  const showFormBtn = document.getElementById('showFormBtn');
+  if (showFormBtn) {
+    showFormBtn.addEventListener('click', function() {
+      console.log('새 법안 등록 버튼 클릭됨');
+      // 수정 중인 법안 초기화
+      currentEditingBill = null;
+      
+      // 폼 필드 초기화
+      document.getElementById('billForm').reset();
+      
+      // 폼 표시
+      const formContainer = document.getElementById('formContainer');
+      formContainer.style.display = 'block';
+      formContainer.classList.add('show');
+      
+      // 저장 버튼 텍스트 설정
+      const submitBtn = document.getElementById('submitFormBtn');
+      if (submitBtn) {
+        submitBtn.textContent = '등록';
+      }
+    });
+  }
+  
+  // 폼 취소 버튼 이벤트 리스너 추가
+  const cancelFormBtn = document.getElementById('cancelFormBtn');
+  if (cancelFormBtn) {
+    cancelFormBtn.addEventListener('click', function() {
+      console.log('폼 취소 버튼 클릭됨');
+      resetForm();
+    });
+  }
+  
+  // 폼 제출 버튼 이벤트 리스너 - 직접 추가
+  const submitFormBtn = document.getElementById('submitFormBtn');
+  if (submitFormBtn) {
+    // 이벤트 리스너 중복 방지를 위해 기존 리스너 제거
+    submitFormBtn.removeEventListener('click', submitForm);
+    
+    // 새 이벤트 리스너 추가
+    submitFormBtn.addEventListener('click', function(event) {
+      console.log('폼 제출 버튼 클릭됨', '인증 상태:', isAuthenticated);
+      if (!isAuthenticated) {
+        showAlert('warning', '법안을 등록하려면 먼저 로그인하세요.');
+        return;
+      }
+      submitForm();
+    });
+    
+    console.log('폼 제출 버튼에 이벤트 리스너 직접 추가 완료');
+  }
 });
 
 // 세션 확인 및 상태 업데이트 함수
@@ -274,19 +330,20 @@ async function handleLogout() {
 // 법안 목록 로드 함수
 async function loadBills() {
   try {
-    // Supabase 연결 테스트
+    // Supabase 연결 테스트 (간단한 쿼리로 변경)
     console.log('Supabase 연결 테스트 중...');
-    const testConnection = await supabaseClient
-      .from('bill')
-      .select('id', { count: 'exact' })
-      .limit(1);
+    const { error: testError } = await supabaseClient
+      .from('bill') // 테이블 이름 확인: 'bill'
+      .select('id', { count: 'exact', head: true }); // 헤더만 요청하여 데이터 전송량 최소화
     
-    if (testConnection.error) {
-      console.error('Supabase 연결 오류:', testConnection.error);
-      showAlert('danger', '서버 연결에 실패했습니다. 새로고침 후 다시 시도해주세요.');
+    if (testError) {
+      console.error('Supabase 연결 오류:', testError.message);
+      console.error('오류 상세 정보:', testError);
+      showAlert('danger', `서버 연결 오류: ${testError.message}. 콘솔을 확인해주세요.`);
       return;
     }
-    
+    console.log('Supabase 연결 확인됨');
+
     // 법안 목록 가져오기
     const { data, error } = await supabaseClient
       .from('bill')
@@ -294,8 +351,9 @@ async function loadBills() {
       .order('created_at', { ascending: false });
     
     if (error) {
-      console.error('법안 목록 로드 오류:', error);
-      showAlert('danger', '법안 목록을 불러오는데 실패했습니다.');
+      console.error('법안 목록 로드 오류:', error.message);
+      console.error('오류 상세 정보:', error);
+      showAlert('danger', `법안 목록 로드 오류: ${error.message}`);
       return;
     }
     
@@ -304,7 +362,7 @@ async function loadBills() {
     
   } catch (error) {
     console.error('법안 목록 로드 중 예외 발생:', error);
-    showAlert('danger', '법안 목록을 불러오는데 실패했습니다.');
+    showAlert('danger', `법안 목록 로드 중 오류 발생: ${error.message}`);
   }
 }
 
@@ -347,16 +405,39 @@ function renderBillList(billsData) {
     // 관리 버튼 셀
     const actionsCell = document.createElement('td');
     actionsCell.className = 'text-end';
-    actionsCell.innerHTML = `
-      <div class="btn-group btn-group-sm">
-        <button type="button" class="btn btn-outline-primary edit-btn" data-bill-id="${bill.id}">
-          <i class="bi bi-pencil"></i>
-        </button>
-        <button type="button" class="btn btn-outline-danger delete-btn" data-bill-id="${bill.id}">
-          <i class="bi bi-trash"></i>
-        </button>
-      </div>
-    `;
+    
+    // 수정 버튼 생성
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.className = 'btn btn-outline-primary btn-sm me-1'; // me-1로 변경하여 여백 추가
+    editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+    editBtn.dataset.billId = bill.id;
+    
+    // 삭제 버튼 생성
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.className = 'btn btn-outline-danger btn-sm';
+    deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+    deleteBtn.dataset.billId = bill.id;
+    
+    // 버튼 그룹 추가
+    const btnGroup = document.createElement('div');
+    btnGroup.className = 'btn-group btn-group-sm';
+    btnGroup.appendChild(editBtn);
+    btnGroup.appendChild(deleteBtn);
+    actionsCell.appendChild(btnGroup);
+    
+    // 수정 버튼 클릭 이벤트 추가
+    editBtn.addEventListener('click', function() {
+      console.log('Edit button direct click handler triggered for bill ID:', bill.id);
+      openEditForm(bill);
+    });
+    
+    // 삭제 버튼 클릭 이벤트 추가
+    deleteBtn.addEventListener('click', function() {
+      console.log('Delete button direct click handler triggered for bill ID:', bill.id);
+      showDeleteConfirmation(bill);
+    });
     
     row.appendChild(nameCell);
     row.appendChild(committeeCell);
@@ -366,6 +447,8 @@ function renderBillList(billsData) {
     
     tableBody.appendChild(row);
   });
+  
+  console.log('Bill list rendered with', billsData.length, 'items. Direct event handlers attached to edit/delete buttons.');
 }
 
 // 이벤트 리스너 설정 함수
@@ -386,31 +469,54 @@ function setupEventListeners() {
     }
   });
   
-  // 법안 제목 클릭 이벤트
+  // 문서 전체 클릭 이벤트 위임 (디버깅 로그 추가)
   document.addEventListener('click', function(event) {
-    if (!isAuthenticated) return; // 인증되지 않은 경우 이벤트 무시
+    console.log('Document clicked. Target:', event.target);
     
-    if (event.target.closest('.bill-title')) {
-      const row = event.target.closest('tr');
-      const index = Array.from(row.parentNode.children).indexOf(row);
-      viewBillDetails(bills[index]);
+    if (!isAuthenticated) {
+      console.log('Click ignored: User not authenticated.');
+      return; // 인증되지 않은 경우 이벤트 무시
     }
     
-    // 수정 버튼 클릭 이벤트
-    if (event.target.closest('.edit-btn')) {
-      const billId = event.target.closest('.edit-btn').dataset.billId;
-      const bill = bills.find(b => b.id == billId);
-      if (bill) {
-        openEditForm(bill);
+    // 법안 제목 클릭
+    if (event.target.closest('.bill-title')) {
+      console.log('Bill title clicked.');
+      const row = event.target.closest('tr');
+      const index = Array.from(row.parentNode.children).indexOf(row);
+      if (bills[index]) {
+        viewBillDetails(bills[index]);
+      } else {
+        console.error('Could not find bill for clicked title.');
       }
     }
     
-    // 삭제 버튼 클릭 이벤트
-    if (event.target.closest('.delete-btn')) {
-      const billId = event.target.closest('.delete-btn').dataset.billId;
+    // 수정 버튼 클릭 (디버깅 로그 추가)
+    const editButton = event.target.closest('.edit-btn');
+    if (editButton) {
+      console.log('Edit button clicked.');
+      const billId = editButton.dataset.billId;
+      console.log('Attempting to edit bill with ID:', billId);
       const bill = bills.find(b => b.id == billId);
       if (bill) {
+        console.log('Bill found:', bill);
+        openEditForm(bill);
+      } else {
+        console.error('Could not find bill with ID:', billId, 'in bills array:', bills);
+      }
+    }
+    
+    // 삭제 버튼 클릭 (디버깅 로그 추가)
+    const deleteButton = event.target.closest('.delete-btn');
+    if (deleteButton) {
+      console.log('Delete button clicked.');
+      const billId = deleteButton.dataset.billId;
+      console.log('Attempting to delete bill with ID:', billId);
+      const bill = bills.find(b => b.id == billId);
+      if (bill) {
+        console.log('Bill found for deletion:', bill);
         showDeleteConfirmation(bill);
+      } else {
+        console.error('Could not find bill for deletion with ID:', billId);
       }
     }
   });
@@ -446,111 +552,116 @@ function setupEventListeners() {
     }
   });
   
-  // 폼 제출 이벤트
-  document.getElementById('submitFormBtn').addEventListener('click', function() {
-    if (!isAuthenticated) {
-      showAlert('warning', '법안을 등록하려면 먼저 로그인하세요.');
-      return;
-    }
-    submitForm();
-  });
-  
   // 미리보기 버튼 이벤트
   document.getElementById('previewBtn').addEventListener('click', previewContent);
 }
 
 // 법안 상세 보기 함수
 function viewBillDetails(bill) {
-  // 모달 객체 가져오기
-  const modal = new bootstrap.Modal(document.getElementById('viewBillModal'));
+  console.log('viewBillDetails 함수 실행. bill:', bill);
   
-  // 기본 정보 생성
-  const modalBody = document.getElementById('viewBillModalBody');
-  modalBody.innerHTML = `
-    <div class="bill-details">
-      <h3 class="mb-3">${bill.bill_name}</h3>
-      <div class="mb-3">
-        <div class="row">
-          <div class="col-md-6">
-            <p><strong>담당자:</strong> ${bill.writer || '-'}</p>
-          </div>
-          <div class="col-md-6">
-            <p><strong>위원회:</strong> ${bill.committee || '-'}</p>
-          </div>
-        </div>
-        <p><strong>등록일:</strong> ${formatDate(bill.created_at)}</p>
-      </div>
-    </div>
-    
-    <!-- 탭 인터페이스 -->
-    <ul class="nav nav-tabs mb-3" id="contentTabs" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="html-tab" data-bs-toggle="tab" data-bs-target="#html-view" type="button" role="tab">HTML 보기</button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="text-tab" data-bs-toggle="tab" data-bs-target="#text-view" type="button" role="tab">텍스트 보기</button>
-      </li>
-    </ul>
-    
-    <div class="tab-content">
-      <div class="tab-pane fade show active" id="html-view" role="tabpanel">
-        <div id="billContentDisplay" class="border rounded p-3 bg-light overflow-auto" style="max-height: 500px;">
-          <div class="text-center p-3">
-            <div class="spinner-border text-primary" role="status">
-              <span class="visually-hidden">로딩 중...</span>
-            </div>
-            <p class="mt-2">내용을 불러오는 중...</p>
-          </div>
-        </div>
-      </div>
-      <div class="tab-pane fade" id="text-view" role="tabpanel">
-        <div id="billTextDisplay" class="border rounded p-3 bg-light overflow-auto" style="max-height: 500px; white-space: pre-wrap;">
-          <div class="text-center p-3">
-            <div class="spinner-border text-primary" role="status">
-              <span class="visually-hidden">로딩 중...</span>
-            </div>
-            <p class="mt-2">내용을 불러오는 중...</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-  
-  // 모달 표시
-  modal.show();
-  
-  // 내용 표시 - 별도 처리하여 모달이 먼저 표시되도록 함
-  setTimeout(() => {
-    // HTML 내용 표시
-    const contentDisplay = document.getElementById('billContentDisplay');
-    if (bill.description && bill.description.trim() !== '') {
-      // 안전하게 처리된 HTML로 표시
-      try {
-        contentDisplay.innerHTML = sanitizeHtml(bill.description);
-      } catch (e) {
-        console.error('HTML 렌더링 오류:', e);
-        contentDisplay.innerHTML = '<div class="alert alert-warning">HTML 내용을 표시하는 중 오류가 발생했습니다.</div>';
-      }
-    } else {
-      contentDisplay.innerHTML = '<div class="p-3">내용이 없습니다.</div>';
+  try {
+    // 이미 존재하는 모달 인스턴스 제거 
+    const existingModal = bootstrap.Modal.getInstance(document.getElementById('viewBillModal'));
+    if (existingModal) {
+      existingModal.dispose();
+      console.log('기존 모달 인스턴스 제거됨');
     }
     
-    // 순수 텍스트 버전 표시
-    const textDisplay = document.getElementById('billTextDisplay');
-    if (bill.description && bill.description.trim() !== '') {
+    // 기본 정보 생성
+    const modalBody = document.getElementById('viewBillModalBody');
+    modalBody.innerHTML = `
+      <div class="bill-details">
+        <h3 class="mb-3">${bill.bill_name}</h3>
+        <div class="mb-3">
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>담당자:</strong> ${bill.writer || '-'}</p>
+            </div>
+            <div class="col-md-6">
+              <p><strong>위원회:</strong> ${bill.committee || '-'}</p>
+            </div>
+          </div>
+          <p><strong>등록일:</strong> ${formatDate(bill.created_at)}</p>
+        </div>
+      </div>
+      
+      <!-- 탭 인터페이스 -->
+      <ul class="nav nav-tabs mb-3" id="contentTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="html-tab" data-bs-toggle="tab" data-bs-target="#html-view" type="button" role="tab">HTML 보기</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="text-tab" data-bs-toggle="tab" data-bs-target="#text-view" type="button" role="tab">텍스트 보기</button>
+        </li>
+      </ul>
+      
+      <div class="tab-content">
+        <div class="tab-pane fade show active" id="html-view" role="tabpanel">
+          <div id="billContentDisplay" class="border rounded p-3 bg-light overflow-auto" style="max-height: 500px;">
+            <div class="text-center p-3">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">로딩 중...</span>
+              </div>
+              <p class="mt-2">내용을 불러오는 중...</p>
+            </div>
+          </div>
+        </div>
+        <div class="tab-pane fade" id="text-view" role="tabpanel">
+          <div id="billTextDisplay" class="border rounded p-3 bg-light overflow-auto" style="max-height: 500px; white-space: pre-wrap;">
+            <div class="text-center p-3">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">로딩 중...</span>
+              </div>
+              <p class="mt-2">내용을 불러오는 중...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // 모달 객체 새로 생성 및 표시
+    const modal = new bootstrap.Modal(document.getElementById('viewBillModal'), {
+      backdrop: 'static', // 배경 클릭으로 닫히지 않음
+      keyboard: true // ESC로 닫기 가능
+    });
+    
+    // 모달 표시
+    modal.show();
+    console.log('상세 보기 모달 표시됨');
+    
+    // 내용 표시 - 별도 처리하여 모달이 먼저 표시되도록 함
+    setTimeout(() => {
       try {
-        // HTML에서 텍스트만 추출
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(bill.description, 'text/html');
-        textDisplay.textContent = doc.body.textContent || '텍스트 내용을 추출할 수 없습니다.';
-      } catch (e) {
-        console.error('텍스트 변환 오류:', e);
-        textDisplay.textContent = '텍스트 내용을 표시하는 중 오류가 발생했습니다.';
+        // HTML 내용 표시
+        const contentDisplay = document.getElementById('billContentDisplay');
+        if (bill.description && bill.description.trim() !== '') {
+          // 안전하게 처리된 HTML로 표시
+          contentDisplay.innerHTML = sanitizeHtml(bill.description);
+        } else {
+          contentDisplay.innerHTML = '<div class="p-3">내용이 없습니다.</div>';
+        }
+        
+        // 순수 텍스트 버전 표시
+        const textDisplay = document.getElementById('billTextDisplay');
+        if (bill.description && bill.description.trim() !== '') {
+          // HTML에서 텍스트만 추출
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(bill.description, 'text/html');
+          textDisplay.textContent = doc.body.textContent || '텍스트 내용을 추출할 수 없습니다.';
+        } else {
+          textDisplay.textContent = '내용이 없습니다.';
+        }
+        
+        console.log('법안 내용 표시 완료');
+      } catch (error) {
+        console.error('내용 표시 중 오류 발생:', error);
       }
-    } else {
-      textDisplay.textContent = '내용이 없습니다.';
-    }
-  }, 300);
+    }, 300);
+  } catch (error) {
+    console.error('모달 초기화 중 오류 발생:', error);
+    showAlert('danger', '상세 정보를 표시하는 중 오류가 발생했습니다.');
+  }
 }
 
 // HTML 안전하게 처리하는 함수
@@ -568,6 +679,7 @@ function sanitizeHtml(html) {
 
 // 수정 폼 열기 함수
 function openEditForm(bill) {
+  console.log('openEditForm 함수 실행. bill:', bill);
   currentEditingBill = bill;
   
   // 폼 필드 채우기
@@ -576,20 +688,52 @@ function openEditForm(bill) {
   document.getElementById('billCommittee').value = bill.committee || '';
   document.getElementById('billContent').value = bill.description || '';
   
-  // 폼이 닫혀 있으면 열기
+  // 폼 컨테이너 직접 표시
   const formContainer = document.getElementById('formContainer');
-  if (!formContainer.classList.contains('show')) {
-    document.getElementById('showFormBtn').click();
+  formContainer.style.display = 'block';
+  formContainer.classList.add('show');
+  
+  // 스크롤하여 폼으로 이동
+  formContainer.scrollIntoView({ behavior: 'smooth' });
+  
+  console.log('폼 필드 설정 완료. 폼 표시됨.');
+  
+  // 저장 버튼에 현재 수정 중인 내용 표시
+  const submitBtn = document.getElementById('submitFormBtn');
+  if (submitBtn) {
+    submitBtn.textContent = '수정 저장';
+    
+    // 기존 이벤트 리스너 제거 (클론 생성으로)
+    const newSubmitBtn = submitBtn.cloneNode(true);
+    submitBtn.parentNode.replaceChild(newSubmitBtn, submitBtn);
+    
+    // 새 이벤트 리스너 추가
+    newSubmitBtn.addEventListener('click', function(event) {
+      console.log('수정 저장 버튼 클릭됨');
+      submitForm();
+    });
+    
+    console.log('수정 저장 버튼에 새 이벤트 리스너 추가 완료');
   }
 }
 
 // 폼 제출 함수
 async function submitForm() {
+  console.log('submitForm 함수 실행 시작');
+  
   // 폼 데이터 가져오기
   const billTitle = document.getElementById('billTitle').value.trim();
   const billProposer = document.getElementById('billProposer').value.trim();
   const billCommittee = document.getElementById('billCommittee').value;
   const billContent = document.getElementById('billContent').value;
+  
+  console.log('폼 데이터:', { 
+    billTitle, 
+    billProposer, 
+    billCommittee, 
+    'contentLength': billContent ? billContent.length : 0,
+    'currentEditingBill': currentEditingBill ? currentEditingBill.id : 'new'
+  });
   
   // 유효성 검사
   if (!billTitle) {
@@ -607,6 +751,7 @@ async function submitForm() {
     
     // 기존 법안 수정 또는 새 법안 등록
     if (currentEditingBill) {
+      console.log(`기존 법안(ID: ${currentEditingBill.id}) 수정 시작`);
       // 기존 법안 수정
       result = await supabaseClient
         .from('bill')
@@ -623,8 +768,10 @@ async function submitForm() {
         throw result.error;
       }
       
+      console.log('법안 수정 성공:', result);
       showAlert('success', '법안이 성공적으로 수정되었습니다.');
     } else {
+      console.log('새 법안 등록 시작');
       // 새 법안 등록
       result = await supabaseClient
         .from('bill')
@@ -639,6 +786,7 @@ async function submitForm() {
         throw result.error;
       }
       
+      console.log('새 법안 등록 성공:', result);
       showAlert('success', '새 법안이 성공적으로 등록되었습니다.');
     }
     
@@ -654,16 +802,24 @@ async function submitForm() {
 
 // 폼 초기화 함수
 function resetForm() {
+  console.log('resetForm 함수 실행');
   document.getElementById('billForm').reset();
   
   // 현재 편집 중인 법안 초기화
   currentEditingBill = null;
   
-  // 폼 닫기
+  // 폼 닫기 (display 속성 사용)
   const formContainer = document.getElementById('formContainer');
-  if (formContainer.classList.contains('show')) {
-    document.getElementById('cancelFormBtn').click();
+  formContainer.style.display = 'none';
+  formContainer.classList.remove('show');
+  
+  // 저장 버튼 텍스트 다시 '등록'으로 변경
+  const submitBtn = document.getElementById('submitFormBtn');
+  if (submitBtn) {
+    submitBtn.textContent = '등록';
   }
+  
+  console.log('폼 초기화 및 숨김 처리 완료');
 }
 
 // 미리보기 함수
@@ -701,25 +857,46 @@ function previewContent() {
 
 // 삭제 확인 모달 표시 함수
 function showDeleteConfirmation(bill) {
+  console.log('showDeleteConfirmation 함수 실행. bill:', bill);
   currentEditingBill = bill;
   
-  // 모달 객체 가져오기
-  const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
-  
-  // 모달 내용 동적 생성
-  const modalBody = document.getElementById('deleteConfirmModalBody');
-  modalBody.innerHTML = `
-    <p>정말 이 법안을 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.</p>
-    <p><strong>${bill.bill_name}</strong></p>
-  `;
-  
-  // 삭제 버튼 이벤트 리스너 추가
-  document.getElementById('confirmDeleteBtn').onclick = function() {
-    deleteBill(currentEditingBill.id);
-  };
-  
-  // 모달 표시
-  modal.show();
+  try {
+    // 기존 모달 인스턴스 제거
+    const existingModal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
+    if (existingModal) {
+      existingModal.dispose();
+      console.log('기존 삭제 확인 모달 인스턴스 제거됨');
+    }
+    
+    // 모달 내용 동적 생성
+    const modalBody = document.getElementById('deleteConfirmModalBody');
+    modalBody.innerHTML = `
+      <p>정말 이 법안을 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.</p>
+      <p><strong>${bill.bill_name}</strong></p>
+    `;
+    
+    // 새 모달 객체 생성
+    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'), {
+      backdrop: 'static'
+    });
+    
+    // 삭제 버튼 이벤트 리스너 추가 (기존 리스너 제거 후)
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    const newConfirmDeleteBtn = confirmDeleteBtn.cloneNode(true);
+    confirmDeleteBtn.parentNode.replaceChild(newConfirmDeleteBtn, confirmDeleteBtn);
+    
+    newConfirmDeleteBtn.addEventListener('click', function() {
+      console.log('삭제 확인 버튼 클릭됨. ID:', currentEditingBill.id);
+      deleteBill(currentEditingBill.id);
+    });
+    
+    // 모달 표시
+    modal.show();
+    console.log('삭제 확인 모달 표시됨');
+  } catch (error) {
+    console.error('삭제 확인 모달 초기화 중 오류:', error);
+    showAlert('danger', '삭제 확인 대화상자를 표시하는 중 오류가 발생했습니다.');
+  }
 }
 
 // 법안 삭제 함수
