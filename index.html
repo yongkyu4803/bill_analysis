@@ -18,13 +18,20 @@
     <!-- Noto Sans KR 웹폰트 추가 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
     
     <!-- 안드로이드 모바일 기기 모달 텍스트 렌더링 문제 해결을 위한 CSS -->
     <style>
         /* 글꼴 설정 */
         body {
             font-family: 'Noto Sans KR', sans-serif;
+        }
+        
+        /* 영문 제목 폰트 설정 */
+        .english-title {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            letter-spacing: -0.02em;
         }
         
         /* 모바일 최적화를 위한 여백 조정 */
@@ -477,7 +484,7 @@
     <header class="bg-dark text-white py-3 shadow-sm">
         <div class="container">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
-                <h1 class="mb-2 mb-md-0 fs-3 text-center text-md-start fw-bold" style="font-family: 'Noto Sans KR', sans-serif;">
+                <h1 class="mb-2 mb-md-0 fs-3 text-center text-md-start fw-bold english-title">
                     <a href="index.html" class="text-white text-decoration-none">Analysis Report on Bills and Meeting Minutes</a>
                 </h1>
                 <div class="d-flex flex-column flex-md-row align-items-center">
