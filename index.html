@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="법안 관리 시스템 - 뷰어 페이지">
     <meta name="author" content="yongkyu4803">
-    <title>법률안 분석 리포트</title>
+    <title>Bill Report</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -447,6 +447,29 @@
             display: flex;
             align-items: stretch;
         }
+        
+        /* 상임위원회 회의록 테이블 셀 간격 조정 */
+        #committeeMeetingTableBody td {
+            padding: 0.5rem 0.75rem;
+        }
+        
+        /* 상임위원회 회의록 테이블 칼럼 너비 */
+        #committeeMeetingTableBody td:nth-child(1) {
+            width: 5%;  /* 위원회 */
+        }
+        #committeeMeetingTableBody td:nth-child(2) {
+            width: 45%;  /* 회의명 */
+        }
+        #committeeMeetingTableBody td:nth-child(3) {
+            width: 35%;  /* 법안명 */
+        }
+        #committeeMeetingTableBody td:nth-child(4) {
+            width: 15%;  /* 회의일자 */
+        }
+        
+        #committeeMeetingTableBody tr {
+            border-bottom: 1px solid #e9ecef;
+        }
     </style>
 </head>
 <body>
@@ -455,7 +478,7 @@
         <div class="container">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
                 <h1 class="mb-2 mb-md-0 fs-3 text-center text-md-start fw-bold" style="font-family: 'Noto Sans KR', sans-serif;">
-                    <a href="index.html" class="text-white text-decoration-none">법률안 분석 리포트</a>
+                    <a href="index.html" class="text-white text-decoration-none">Analysis Report on Bills and Meeting Minutes</a>
                 </h1>
                 <div class="d-flex flex-column flex-md-row align-items-center">
                     <div class="header-search-container mb-2 mb-md-0 me-md-3">
@@ -517,6 +540,22 @@
                             <table class="table table-hover mb-0">
                                 <tbody id="billTableBody">
                                     <!-- 여기에 법안 목록이 동적으로 표시됩니다 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 상임위원회 회의 목록 카드 추가 -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h3 class="fs-5 mb-0 fw-bold">상임위원회 회의록</h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <tbody id="committeeMeetingTableBody">
+                                    <!-- 여기에 상임위원회 회의 목록이 동적으로 표시됩니다 -->
                                 </tbody>
                             </table>
                         </div>

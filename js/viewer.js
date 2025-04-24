@@ -5,6 +5,7 @@ const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
 // 전역 변수 선언
 let bills = [];
+let committeeMeetings = []; // 상임위원회 회의 데이터를 저장할 전역 변수 추가
 let isAdmin = false;
 
 // Supabase 연결 테스트 함수
@@ -48,6 +49,9 @@ document.addEventListener('DOMContentLoaded', async function() {
   
   // 법안 목록 로드
   await loadBills();
+  
+  // 상임위원회 회의 목록 로드
+  await loadCommitteeMeetings();
   
   // 통계 업데이트
   updateStatistics();
@@ -358,6 +362,89 @@ async function loadBills() {
   }
 }
 
+// 상임위원회 회의 목록 로드 함수
+async function loadCommitteeMeetings() {
+  try {
+    const { data, error } = await supabaseClient
+      .from('committee_meeting')
+      .select('*')
+      .order('meeting_date', { ascending: false });
+    
+    if (error) {
+      console.error('상임위원회 회의 목록 로드 오류:', error);
+      showAlert('danger', '상임위원회 회의 목록을 불러오는데 실패했습니다.');
+      return;
+    }
+    
+    committeeMeetings = data || [];
+    renderCommitteeMeetingList(data);
+    
+  } catch (error) {
+    console.error('상임위원회 회의 목록 로드 중 예외 발생:', error);
+    showAlert('danger', '상임위원회 회의 목록을 불러오는데 실패했습니다.');
+  }
+}
+
+// 상임위원회 회의 목록 렌더링 함수
+function renderCommitteeMeetingList(meetingsData) {
+  const tableBody = document.getElementById('committeeMeetingTableBody');
+  tableBody.innerHTML = '';
+  
+  if (!meetingsData || meetingsData.length === 0) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="4" class="text-center py-3">등록된 상임위원회 회의가 없습니다.</td>
+      </tr>
+    `;
+    return;
+  }
+  
+  meetingsData.forEach((meeting) => {
+    const row = document.createElement('tr');
+    row.className = 'align-middle py-2';
+    
+    // 위원회 셀
+    const committeeCell = document.createElement('td');
+    committeeCell.style.paddingLeft = '16px';
+    committeeCell.innerHTML = `<span class="badge bg-secondary">${meeting.committee || '-'}</span>`;
+    
+    // 회의명 셀
+    const nameCell = document.createElement('td');
+    nameCell.style.paddingTop = '0.4rem';
+    nameCell.style.paddingBottom = '0.4rem';
+    nameCell.innerHTML = `
+      <div class="d-flex justify-content-between align-items-start">
+        <a href="report-viewer.html?type=meeting&id=${meeting.id}" class="bill-title fw-bold text-primary fs-6 text-decoration-none">${meeting.meeting_name}</a>
+        <small class="text-muted ms-2 d-md-none">${formatDate(meeting.meeting_date, true)}</small>
+      </div>
+      <div class="d-block d-md-none small mt-1">
+        <div class="d-flex align-items-center">
+          <span class="badge bg-secondary me-1">${meeting.committee || '-'}</span>
+          <small class="text-muted">${meeting.bill_name || '-'}</small>
+        </div>
+      </div>
+    `;
+    
+    // 법안명 셀
+    const billNameCell = document.createElement('td');
+    billNameCell.className = 'd-none d-md-table-cell text-muted';
+    billNameCell.textContent = meeting.bill_name || '-';
+    
+    // 날짜 셀
+    const dateCell = document.createElement('td');
+    dateCell.className = 'd-none d-md-table-cell text-muted';
+    dateCell.style.paddingRight = '16px';
+    dateCell.textContent = formatDate(meeting.meeting_date, true); // 날짜만 표시
+    
+    row.appendChild(committeeCell);
+    row.appendChild(nameCell);
+    row.appendChild(billNameCell);
+    row.appendChild(dateCell);
+    
+    tableBody.appendChild(row);
+  });
+}
+
 // 법안 목록 렌더링 함수
 function renderBillList(billsData) {
   const tableBody = document.getElementById('billTableBody');
@@ -510,16 +597,26 @@ function setupEventListeners() {
     
     if (searchTerm === '') {
       renderBillList(bills);
+      renderCommitteeMeetingList(committeeMeetings);
       return;
     }
     
+    // 법안 필터링
     const filteredBills = bills.filter(bill => 
       bill.bill_name.toLowerCase().includes(searchTerm) || 
       (bill.writer && bill.writer.toLowerCase().includes(searchTerm)) ||
       (bill.committee && bill.committee.toLowerCase().includes(searchTerm))
     );
     
+    // 상임위원회 회의 필터링
+    const filteredMeetings = committeeMeetings.filter(meeting => 
+      meeting.meeting_name.toLowerCase().includes(searchTerm) || 
+      (meeting.bill_name && meeting.bill_name.toLowerCase().includes(searchTerm)) ||
+      (meeting.committee && meeting.committee.toLowerCase().includes(searchTerm))
+    );
+    
     renderBillList(filteredBills);
+    renderCommitteeMeetingList(filteredMeetings);
   });
   
   // 검색창 엔터 키 이벤트
@@ -1107,10 +1204,56 @@ function initHomePage() {
         // 법안 목록 로드
         loadBills();
         
+        // 상임위원회 회의 목록 로드
+        loadCommitteeMeetings();
+        
         // 통계 업데이트
         updateStatistics();
         
         // 이벤트 리스너 등록
         setupEventListeners();
     });
+}
+
+// 상임위원회 회의 상세 보기 함수
+function viewCommitteeMeetingDetails(meeting) {
+  const modalTitle = document.getElementById('viewBillModalTitle');
+  const billInfoList = document.getElementById('billInfoList');
+  const billContentDisplay = document.getElementById('billContentDisplay');
+  
+  // 모달 제목 설정
+  modalTitle.textContent = meeting.meeting_name;
+  
+  // 상임위원회 회의 정보 표시
+  billInfoList.innerHTML = `
+    <li class="list-group-item d-flex justify-content-between">
+      <span class="fw-medium">상임위원회:</span>
+      <span class="text-end">${meeting.committee || '-'}</span>
+    </li>
+    <li class="list-group-item d-flex justify-content-between">
+      <span class="fw-medium">회의 날짜:</span>
+      <span class="text-end">${formatDate(meeting.meeting_date) || '-'}</span>
+    </li>
+    <li class="list-group-item d-flex justify-content-between">
+      <span class="fw-medium">법안명:</span>
+      <span class="text-end">${meeting.bill_name || '-'}</span>
+    </li>
+    <li class="list-group-item d-flex justify-content-between">
+      <span class="fw-medium">등록일:</span>
+      <span class="text-end">${formatDate(meeting.created_at) || '-'}</span>
+    </li>
+  `;
+  
+  // 내용 표시 (마크다운 지원)
+  if (meeting.description_markdown) {
+    billContentDisplay.innerHTML = marked.parse(meeting.description_markdown);
+  } else if (meeting.description) {
+    billContentDisplay.innerHTML = sanitizeHtml(meeting.description);
+  } else {
+    billContentDisplay.innerHTML = '<p class="text-center my-5">등록된 회의 내용이 없습니다.</p>';
+  }
+  
+  // 모달 표시
+  const viewBillModal = new bootstrap.Modal(document.getElementById('viewBillModal'));
+  viewBillModal.show();
 } 

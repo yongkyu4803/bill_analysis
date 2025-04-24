@@ -17,6 +17,9 @@
     <!-- Supabase 클라이언트 라이브러리 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.5/dist/umd/supabase.min.js"></script>
     
+    <!-- Marked.js 라이브러리 추가 - 마크다운 변환 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
     <style>
         /* 리포트 뷰어 스타일 */
         #reportContentContainer {
@@ -81,7 +84,7 @@
     <header class="bg-dark text-white py-3 shadow-sm">
         <div class="container">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
-                <h1 class="mb-2 mb-md-0 fs-3 text-center text-md-start">법률안 리포트</h1>
+                <h1 class="mb-2 mb-md-0 fs-3 text-center text-md-start">법률안 분석 리포트</h1>
                 <div class="d-flex align-items-center">
                     <a href="index.html" class="btn btn-outline-light btn-sm me-2">
                         <i class="bi bi-house-fill me-1"></i> 홈
@@ -168,18 +171,19 @@
         
         // 페이지 로드 시 실행
         document.addEventListener('DOMContentLoaded', async function() {
-            // URL에서 bill ID 파라미터 가져오기
+            // URL에서 파라미터 가져오기
             const urlParams = new URLSearchParams(window.location.search);
-            const billId = urlParams.get('id');
+            const id = urlParams.get('id');
+            const type = urlParams.get('type') || 'bill'; // 기본값은 'bill'
             
-            // bill ID가 없는 경우
-            if (!billId) {
+            // ID가 없는 경우
+            if (!id) {
                 showError('리포트 ID가 지정되지 않았습니다.');
                 return;
             }
             
             // 리포트 데이터 로드
-            await loadReportData(billId);
+            await loadReportData(id, type);
             
             // 인쇄 버튼 이벤트 리스너
             document.getElementById('printBtn').addEventListener('click', function() {
@@ -188,79 +192,170 @@
         });
         
         // 리포트 데이터 로드 함수
-        async function loadReportData(billId) {
+        async function loadReportData(id, type) {
             try {
-                // 법안 데이터 가져오기
-                const { data: bill, error } = await supabaseClient
-                    .from('bill')
-                    .select('*')
-                    .eq('id', billId)
-                    .single();
+                let data;
+                let error;
+                
+                // 데이터 유형에 따라 다른 테이블에서 데이터 가져오기
+                if (type === 'meeting') {
+                    // 상임위원회 회의 데이터 가져오기
+                    const result = await supabaseClient
+                        .from('committee_meeting')
+                        .select('*')
+                        .eq('id', id)
+                        .single();
+                    
+                    data = result.data;
+                    error = result.error;
+                } else {
+                    // 법안 데이터 가져오기
+                    const result = await supabaseClient
+                        .from('bill')
+                        .select('*')
+                        .eq('id', id)
+                        .single();
+                    
+                    data = result.data;
+                    error = result.error;
+                }
                 
                 if (error) throw error;
+                if (!data) throw new Error('데이터를 찾을 수 없습니다.');
                 
-                if (!bill) {
-                    showError('요청하신 리포트를 찾을 수 없습니다.');
-                    return;
-                }
-                
-                // 로딩 인디케이터 숨기기
-                document.getElementById('loadingIndicator').classList.add('d-none');
-                
-                // 리포트 컨테이너 표시
-                const reportContainer = document.getElementById('reportContentContainer');
-                reportContainer.classList.remove('d-none');
-                
-                // 기본 정보 채우기
-                document.getElementById('reportTitle').textContent = bill.bill_name;
-                document.getElementById('reportWriter').textContent = bill.writer || '-';
-                document.getElementById('reportCommittee').textContent = bill.committee || '-';
-                document.getElementById('reportDate').textContent = formatDate(bill.created_at);
-                
-                // 페이지 제목 업데이트
-                document.title = `${bill.bill_name} - 법률안 리포트 뷰어`;
-                
-                // 리포트 내용 표시
-                const reportContent = document.getElementById('reportContent');
-                
-                if (bill.description && bill.description.trim() !== '') {
-                    // HTML 내용 안전하게 표시
-                    reportContent.innerHTML = sanitizeHtml(bill.description);
-                } else {
-                    reportContent.innerHTML = '<div class="alert alert-warning">리포트 내용이 없습니다.</div>';
-                }
+                // UI 업데이트
+                updateReportUI(data, type);
                 
             } catch (error) {
-                console.error('리포트 로드 오류:', error);
-                showError('리포트를 불러오는 중 오류가 발생했습니다: ' + error.message);
+                console.error('리포트 데이터 로드 오류:', error);
+                showError(error.message || '리포트 데이터를 불러오는 중 오류가 발생했습니다.');
             }
         }
         
-        // HTML 안전하게 처리하는 함수
-        function sanitizeHtml(html) {
-            // 기본적인 살균 처리 (실제 프로덕션에서는 더 견고한 라이브러리 사용 권장)
-            return html
-                .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')  // 스크립트 태그 제거
-                .replace(/javascript\s*:/gi, '')  // 자바스크립트 프로토콜 제거
-                .replace(/on\w+\s*=/gi, '')  // 온로드 등 이벤트 핸들러 제거
-                .replace(/style\s*=\s*"[^"]*"/gi, function(match) {
-                    // 스타일 속성에서 위험한 것 제거
-                    return match.replace(/expression|url\s*\(/gi, '');
-                });
+        // 리포트 UI 업데이트 함수
+        function updateReportUI(data, type) {
+            const titleElement = document.getElementById('reportTitle');
+            const writerElement = document.getElementById('reportWriter');
+            const committeeElement = document.getElementById('reportCommittee');
+            const dateElement = document.getElementById('reportDate');
+            const contentElement = document.getElementById('reportContent');
+            
+            // 타입에 따라 적절한 데이터 매핑
+            if (type === 'meeting') {
+                // 상임위원회 회의 데이터 표시
+                document.title = `상임위원회 회의 - ${data.meeting_name}`;
+                titleElement.textContent = data.meeting_name;
+                writerElement.textContent = data.bill_name || '-'; // 법안명 표시
+                committeeElement.textContent = data.committee || '-';
+                dateElement.textContent = formatDate(data.meeting_date) || '-';
+                
+                // 마크다운 내용 처리
+                if (data.description) {
+                    // marked 라이브러리를 사용하여 마크다운을 HTML로 변환
+                    try {
+                        contentElement.innerHTML = marked.parse(data.description);
+                    } catch (error) {
+                        console.error('마크다운 변환 오류:', error);
+                        contentElement.innerHTML = sanitizeHtml(data.description);
+                    }
+                } else {
+                    contentElement.innerHTML = '<p class="text-center my-5">등록된 회의 내용이 없습니다.</p>';
+                }
+            } else {
+                // 법안 데이터 표시
+                document.title = `법률안 분석 보고서 - ${data.bill_name}`;
+                titleElement.textContent = data.bill_name;
+                writerElement.textContent = data.writer || '-';
+                committeeElement.textContent = data.committee || '-';
+                dateElement.textContent = formatDate(data.created_at) || '-';
+                
+                // 마크다운 내용 처리
+                if (data.description_markdown) {
+                    // marked 라이브러리가 로드되어 있다면 사용
+                    if (typeof marked !== 'undefined') {
+                        contentElement.innerHTML = marked.parse(data.description_markdown);
+                    } else {
+                        contentElement.innerHTML = convertToHtml(data.description_markdown);
+                    }
+                } else if (data.description) {
+                    contentElement.innerHTML = sanitizeHtml(data.description);
+                } else {
+                    contentElement.innerHTML = '<p class="text-center my-5">등록된 리포트 내용이 없습니다.</p>';
+                }
+            }
+            
+            // 컨테이너 표시, 로딩 인디케이터 숨기기
+            document.getElementById('reportContentContainer').classList.remove('d-none');
+            document.getElementById('loadingIndicator').classList.add('d-none');
+            
+            // 피드백 버튼 URL 업데이트
+            updateFeedbackButtons(data, type);
+        }
+        
+        // 피드백 버튼 URL 업데이트
+        function updateFeedbackButtons(data, type) {
+            const feedbackBtn = document.getElementById('feedbackBtn');
+            const bottomFeedbackBtn = document.getElementById('bottomFeedbackBtn');
+            
+            let feedbackUrl = 'feedback.html?';
+            
+            if (type === 'meeting') {
+                feedbackUrl += `ref=meeting&id=${data.id}&name=${encodeURIComponent(data.meeting_name)}`;
+            } else {
+                feedbackUrl += `ref=bill&id=${data.id}&name=${encodeURIComponent(data.bill_name)}`;
+            }
+            
+            feedbackBtn.href = feedbackUrl;
+            bottomFeedbackBtn.href = feedbackUrl;
         }
         
         // 날짜 포맷 함수
         function formatDate(dateString) {
-            if (!dateString) return '-';
+            if (!dateString) return null;
             
             const date = new Date(dateString);
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
             
-            if (isNaN(date.getTime())) {
-                return dateString;
-            }
+            return date.toLocaleDateString('ko-KR', options);
+        }
+        
+        // HTML 샌드박스 처리
+        function sanitizeHtml(html) {
+            // 간단한 샌드박스 처리 로직 (실제로는 DOMPurify 등의 라이브러리 권장)
+            if (!html) return '';
             
-            // 항상 날짜만 표시 (시간 제거)
-            return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+            // 스크립트 태그 제거 및 기타 위험한 속성 필터링
+            return html
+                .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+                .replace(/javascript:/gi, '')
+                .replace(/on\w+=/gi, '')
+                .replace(/eval\s*\(/gi, '');
+        }
+        
+        // 마크다운을 HTML로 변환하는 간단한 함수 (marked 라이브러리가 없을 경우 사용)
+        function convertToHtml(markdown) {
+            if (!markdown) return '';
+            
+            // 간단한 마크다운 변환 (제한적인 기능)
+            return markdown
+                // 제목
+                .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+                .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+                .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+                // 코드 블록
+                .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+                // 굵게
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                // 기울임
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                // 인용
+                .replace(/^\> (.*$)/gm, '<blockquote>$1</blockquote>')
+                // 글머리 기호
+                .replace(/^\- (.*$)/gm, '<ul><li>$1</li></ul>')
+                // 링크
+                .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+                // 줄바꿈
+                .replace(/\n/g, '<br>');
         }
         
         // 오류 메시지 표시 함수

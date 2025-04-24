@@ -2,6 +2,8 @@
 let bills = [];
 let currentEditingBill = null;
 let isAuthenticated = false; // 인증 상태를 추적하는 변수
+let meetings = [];
+let currentEditingMeeting = null;
 
 // 페이지 로드 시 실행되는 초기화 함수
 document.addEventListener('DOMContentLoaded', async function() {
@@ -83,6 +85,112 @@ document.addEventListener('DOMContentLoaded', async function() {
       previewContent();
     });
     console.log('미리보기 버튼에 이벤트 리스너 추가 완료');
+  }
+
+  // 입력 유형 선택에 따른 필드 표시/숨김 처리
+  const inputTypeSelect = document.getElementById('inputType');
+  const billFields = document.getElementById('billFields');
+  const meetingFields = document.getElementById('meetingFields');
+  
+  if (inputTypeSelect) {
+    inputTypeSelect.addEventListener('change', function() {
+      const selectedType = this.value;
+      
+      // 모든 필드 숨기기
+      billFields.style.display = 'none';
+      meetingFields.style.display = 'none';
+      
+      // 선택된 유형의 필드만 표시
+      if (selectedType === 'bill') {
+        billFields.style.display = 'block';
+      } else if (selectedType === 'meeting') {
+        meetingFields.style.display = 'block';
+      }
+    });
+  }
+  
+  // 데이터 입력 폼 제출 처리
+  const dataInputForm = document.getElementById('dataInputForm');
+  if (dataInputForm) {
+    dataInputForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      // 로딩 상태 표시
+      const submitBtn = document.getElementById('submitDataBtn');
+      const originalBtnText = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 저장 중...';
+      
+      try {
+        const inputType = document.getElementById('inputType').value;
+        let data = {};
+        
+        if (inputType === 'bill') {
+          // 법안 데이터 수집
+          data = {
+            bill_name: document.getElementById('billName').value,
+            writer: document.getElementById('billWriter').value,
+            committee: document.getElementById('billCommitteeSelect').value,
+            description_markdown: document.getElementById('billDescription').value,
+            created_at: new Date().toISOString()
+          };
+          
+          // Supabase에 법안 데이터 저장
+          const { error } = await supabaseClient
+            .from('bill')
+            .insert([data]);
+          
+          if (error) throw error;
+          
+        } else if (inputType === 'meeting') {
+          // 상임위원회 회의 데이터 수집
+          data = {
+            meeting_name: document.getElementById('meetingName').value,
+            committee: document.getElementById('meetingCommittee').value,
+            meeting_date: document.getElementById('meetingDate').value,
+            bill_name: document.getElementById('relatedBill').value,
+            description_markdown: document.getElementById('meetingDescription').value,
+            created_at: new Date().toISOString()
+          };
+          
+          // Supabase에 회의 데이터 저장
+          const { error } = await supabaseClient
+            .from('committee_meeting')
+            .insert([data]);
+          
+          if (error) throw error;
+        }
+        
+        // 성공 메시지 표시
+        showAlert('success', '데이터가 성공적으로 저장되었습니다.');
+        
+        // 폼 초기화
+        dataInputForm.reset();
+        billFields.style.display = 'none';
+        meetingFields.style.display = 'none';
+        
+        // 법안 목록 새로고침
+        if (inputType === 'bill') {
+          await loadBills();
+        }
+        
+      } catch (error) {
+        console.error('데이터 저장 오류:', error);
+        showAlert('danger', '데이터 저장 중 오류가 발생했습니다: ' + error.message);
+      } finally {
+        // 버튼 상태 복원
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+      }
+    });
+  }
+
+  // 회의록 관련 이벤트 리스너 등록
+  setupMeetingEventListeners();
+  
+  // 인증된 경우 회의록 목록 로드
+  if (isAuthenticated) {
+    await loadMeetings();
   }
 });
 
@@ -1191,4 +1299,342 @@ function convertMarkdownToHtml(markdown) {
         console.error('마크다운 → HTML 변환 오류:', error);
         return `<p>${markdown}</p>`; // 오류 시 기본 p 태그로 감싸서 반환
     }
-} 
+}
+
+// 회의록 관련 이벤트 리스너 설정
+function setupMeetingEventListeners() {
+    // 회의록 등록 버튼 이벤트
+    const showMeetingFormBtn = document.getElementById('showMeetingFormBtn');
+    if (showMeetingFormBtn) {
+        showMeetingFormBtn.addEventListener('click', function() {
+            console.log('회의록 등록 버튼 클릭됨');
+            currentEditingMeeting = null;
+            document.getElementById('meetingForm').reset();
+            document.getElementById('submitMeetingFormBtn').textContent = '등록';
+        });
+    }
+
+    // 회의록 폼 취소 버튼 이벤트
+    const cancelMeetingFormBtn = document.getElementById('cancelMeetingFormBtn');
+    if (cancelMeetingFormBtn) {
+        cancelMeetingFormBtn.addEventListener('click', function() {
+            console.log('회의록 폼 취소 버튼 클릭됨');
+            resetMeetingForm();
+        });
+    }
+
+    // 회의록 폼 제출 이벤트
+    const meetingForm = document.getElementById('meetingForm');
+    if (meetingForm) {
+        meetingForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await submitMeetingForm();
+        });
+    }
+
+    // 회의록 미리보기 버튼 이벤트
+    const previewMeetingBtn = document.getElementById('previewMeetingBtn');
+    if (previewMeetingBtn) {
+        previewMeetingBtn.addEventListener('click', function() {
+            previewMeetingContent();
+        });
+    }
+}
+
+// 회의록 목록 로드 함수
+async function loadMeetings() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('committee_meeting')
+            .select('*')
+            .order('meeting_date', { ascending: false });
+
+        if (error) throw error;
+
+        meetings = data;
+        renderMeetingList(data);
+        updateMeetingStatistics(data);
+        
+    } catch (error) {
+        console.error('회의록 목록 로드 오류:', error);
+        showAlert('danger', '회의록 목록을 불러오는 중 오류가 발생했습니다.');
+    }
+}
+
+// 회의록 목록 렌더링 함수
+function renderMeetingList(meetingsData) {
+    const tableBody = document.getElementById('meetingTableBody');
+    if (!tableBody) return;
+
+    tableBody.innerHTML = '';
+
+    if (!meetingsData || meetingsData.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center py-3">등록된 회의록이 없습니다.</td>
+            </tr>
+        `;
+        return;
+    }
+
+    meetingsData.forEach(meeting => {
+        const row = document.createElement('tr');
+        
+        // 회의명
+        const titleCell = document.createElement('td');
+        titleCell.innerHTML = `<span class="meeting-title cursor-pointer">${meeting.meeting_name}</span>`;
+        
+        // 위원회
+        const committeeCell = document.createElement('td');
+        committeeCell.innerHTML = `<span class="badge bg-secondary">${meeting.committee || '-'}</span>`;
+        
+        // 회의일자
+        const meetingDateCell = document.createElement('td');
+        meetingDateCell.textContent = formatDate(meeting.meeting_date);
+        
+        // 등록일
+        const createdAtCell = document.createElement('td');
+        createdAtCell.textContent = formatDate(meeting.created_at);
+        
+        // 관리 버튼
+        const actionsCell = document.createElement('td');
+        actionsCell.className = 'text-end';
+        
+        const btnGroup = document.createElement('div');
+        btnGroup.className = 'btn-group btn-group-sm';
+        
+        // 수정 버튼
+        const editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'btn btn-outline-primary btn-sm me-1';
+        editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+        editBtn.addEventListener('click', () => openMeetingEditForm(meeting));
+        
+        // 삭제 버튼
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'btn btn-outline-danger btn-sm';
+        deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+        deleteBtn.addEventListener('click', () => showMeetingDeleteConfirmation(meeting));
+        
+        btnGroup.appendChild(editBtn);
+        btnGroup.appendChild(deleteBtn);
+        actionsCell.appendChild(btnGroup);
+        
+        // 행에 셀 추가
+        row.appendChild(titleCell);
+        row.appendChild(committeeCell);
+        row.appendChild(meetingDateCell);
+        row.appendChild(createdAtCell);
+        row.appendChild(actionsCell);
+        
+        // 제목 클릭 이벤트
+        titleCell.addEventListener('click', () => viewMeetingDetails(meeting));
+        
+        tableBody.appendChild(row);
+    });
+}
+
+// 회의록 통계 업데이트 함수
+function updateMeetingStatistics(meetingsData) {
+    // 전체 회의록 수
+    const totalCount = meetingsData.length;
+    document.getElementById('totalMeetingsCount').textContent = totalCount;
+
+    // 이번 달 회의록 수
+    const today = new Date();
+    const thisMonth = today.getMonth();
+    const thisYear = today.getFullYear();
+    const monthlyCount = meetingsData.filter(meeting => {
+        const meetingDate = new Date(meeting.meeting_date);
+        return meetingDate.getMonth() === thisMonth && meetingDate.getFullYear() === thisYear;
+    }).length;
+    document.getElementById('monthlyMeetingsCount').textContent = monthlyCount;
+
+    // 위원회별 통계 차트
+    const committeeStats = {};
+    meetingsData.forEach(meeting => {
+        if (meeting.committee) {
+            committeeStats[meeting.committee] = (committeeStats[meeting.committee] || 0) + 1;
+        }
+    });
+
+    // 차트 데이터 생성 및 표시
+    const chartContainer = document.getElementById('committeeMeetingsChart');
+    if (chartContainer) {
+        let chartHTML = '<div class="mt-3 small">';
+        
+        Object.entries(committeeStats).forEach(([committee, count]) => {
+            const percentage = Math.round((count / totalCount) * 100);
+            chartHTML += `
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>${committee}</span>
+                        <span class="text-primary">${count}건</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-info" role="progressbar" 
+                             style="width: ${percentage}%" 
+                             aria-valuenow="${percentage}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100"></div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        chartHTML += '</div>';
+        chartContainer.innerHTML = chartHTML;
+    }
+}
+
+// 회의록 폼 제출 처리 함수
+async function submitMeetingForm() {
+    try {
+        const content = document.getElementById('meetingContent').value;
+        const htmlContent = convertMarkdownToHtml(content);
+        
+        const meetingData = {
+            meeting_name: document.getElementById('meetingTitle').value,
+            committee: document.getElementById('meetingCommitteeSelect').value,
+            meeting_date: document.getElementById('meetingDate').value,
+            bill_name: document.getElementById('relatedBills').value,
+            description_markdown: content,           // 원본 마크다운 저장
+            description: htmlContent,               // 변환된 HTML 저장
+            created_at: new Date().toISOString()
+        };
+
+        const submitBtn = document.getElementById('submitMeetingFormBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>저장 중...';
+
+        let result;
+        if (currentEditingMeeting) {
+            // 수정
+            result = await supabaseClient
+                .from('committee_meeting')
+                .update(meetingData)
+                .eq('id', currentEditingMeeting.id);
+        } else {
+            // 새로 등록
+            result = await supabaseClient
+                .from('committee_meeting')
+                .insert([meetingData]);
+        }
+
+        if (result.error) throw result.error;
+
+        showAlert('success', `회의록이 성공적으로 ${currentEditingMeeting ? '수정' : '등록'}되었습니다.`);
+        resetMeetingForm();
+        await loadMeetings();
+
+    } catch (error) {
+        console.error('회의록 저장 오류:', error);
+        showAlert('danger', '회의록 저장 중 오류가 발생했습니다.');
+    } finally {
+        const submitBtn = document.getElementById('submitMeetingFormBtn');
+        submitBtn.disabled = false;
+        submitBtn.textContent = currentEditingMeeting ? '수정' : '등록';
+    }
+}
+
+// 회의록 수정 폼 열기 함수
+function openMeetingEditForm(meeting) {
+    currentEditingMeeting = meeting;
+    
+    document.getElementById('meetingTitle').value = meeting.meeting_name;
+    document.getElementById('meetingCommitteeSelect').value = meeting.committee;
+    document.getElementById('meetingDate').value = meeting.meeting_date;
+    document.getElementById('relatedBills').value = meeting.bill_name || '';
+    document.getElementById('meetingContent').value = meeting.description_markdown || meeting.description || '';
+    
+    document.getElementById('submitMeetingFormBtn').textContent = '수정';
+    
+    const formContainer = document.getElementById('meetingFormContainer');
+    formContainer.classList.add('show');
+    formContainer.scrollIntoView({ behavior: 'smooth' });
+}
+
+// 회의록 삭제 확인 모달 표시 함수
+function showMeetingDeleteConfirmation(meeting) {
+    const modalBody = document.getElementById('deleteConfirmModalBody');
+    modalBody.innerHTML = `
+        <p>다음 회의록을 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.</p>
+        <p><strong>${meeting.meeting_name}</strong></p>
+        <p class="text-muted mb-0">회의일자: ${formatDate(meeting.meeting_date)}</p>
+    `;
+
+    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    confirmDeleteBtn.onclick = async () => {
+        await deleteMeeting(meeting.id);
+        modal.hide();
+    };
+    
+    modal.show();
+}
+
+// 회의록 삭제 함수
+async function deleteMeeting(meetingId) {
+    try {
+        const { error } = await supabaseClient
+            .from('committee_meeting')
+            .delete()
+            .eq('id', meetingId);
+
+        if (error) throw error;
+
+        showAlert('success', '회의록이 성공적으로 삭제되었습니다.');
+        await loadMeetings();
+
+    } catch (error) {
+        console.error('회의록 삭제 오류:', error);
+        showAlert('danger', '회의록 삭제 중 오류가 발생했습니다.');
+    }
+}
+
+// 회의록 상세 보기 함수
+function viewMeetingDetails(meeting) {
+    const modalTitle = document.getElementById('viewBillModalTitle');
+    const modalBody = document.getElementById('viewBillModalBody');
+    
+    modalTitle.textContent = '회의록 상세 보기';
+    modalBody.innerHTML = `
+        <div class="meeting-details">
+            <h3 class="mb-3">${meeting.meeting_name}</h3>
+            <div class="mb-3">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>위원회:</strong> ${meeting.committee || '-'}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>회의일자:</strong> ${formatDate(meeting.meeting_date)}</p>
+                    </div>
+                </div>
+                <p><strong>관련 법안:</strong> ${meeting.bill_name || '-'}</p>
+                <p><strong>등록일:</strong> ${formatDate(meeting.created_at)}</p>
+            </div>
+            <div class="border rounded p-3 bg-light">
+                <h4 class="fs-5 mb-3">회의 내용</h4>
+                <div class="meeting-content">
+                    ${meeting.description_markdown ? convertMarkdownToHtml(meeting.description_markdown) : (meeting.description || '내용이 없습니다.')}
+                </div>
+            </div>
+        </div>
+    `;
+
+    const modal = new bootstrap.Modal(document.getElementById('viewBillModal'));
+    modal.show();
+}
+
+// 회의록 폼 초기화 함수
+function resetMeetingForm() {
+    document.getElementById('meetingForm').reset();
+    currentEditingMeeting = null;
+    
+    const formContainer = document.getElementById('meetingFormContainer');
+    formContainer.classList.remove('show');
+    
+    document.getElementById('submitMeetingFormBtn').textContent = '등록';
+}
